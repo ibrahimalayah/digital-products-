@@ -1,0 +1,78 @@
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Bot, CreditCard, FileText, LayoutDashboard, Library, Lightbulb, LogOut, Megaphone, Settings, ShieldCheck, Store } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { Logo } from "@/components/ui";
+import { cn } from "@/lib/cn";
+
+const nav = [
+  { href: "/app", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/app/ideas", label: "Idea lab", icon: Lightbulb, exact: false },
+  { href: "/app/products", label: "Products", icon: FileText, exact: false },
+  { href: "/app/campaigns", label: "Campaigns", icon: Megaphone, exact: false },
+  { href: "/app/agents", label: "Agents", icon: Bot, exact: false },
+  { href: "/app/library", label: "Library", icon: Library, exact: false },
+  { href: "/app/billing", label: "Billing", icon: CreditCard, exact: false },
+  { href: "/app/settings", label: "Settings", icon: Settings, exact: false },
+];
+
+export function Shell({ user, children }: { user: { name: string; email: string; plan: string; admin: boolean }; children: React.ReactNode }) {
+  const path = usePathname();
+  const items = user.admin ? [...nav, { href: "/admin", label: "Control panel", icon: ShieldCheck, exact: false }] : nav;
+  const active = (href: string, exact: boolean) => (exact ? path === href : path === href || path.startsWith(`${href}/`));
+
+  async function signOut() {
+    await authClient.signOut();
+    window.location.href = "/"; // full reload clears all client state on sign-out
+  }
+
+  return (
+    <div className="flex min-h-screen flex-1 flex-col lg:flex-row">
+      <aside className="border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col lg:border-r">
+        <div className="flex h-16 items-center justify-between px-4 lg:px-5">
+          <Link href="/app" aria-label="Studio home">
+            <Logo />
+          </Link>
+          <Link href="/store" className="text-muted hover:text-ink lg:hidden" aria-label="Store">
+            <Store className="size-5" />
+          </Link>
+        </div>
+        <nav aria-label="Studio" className="flex gap-1 overflow-x-auto border-b border-line px-3 pb-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:border-0 lg:pb-0">
+          {items.map((it) => (
+            <Link
+              key={it.href}
+              href={it.href}
+              aria-current={active(it.href, it.exact) ? "page" : undefined}
+              className={cn(
+                "flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
+                active(it.href, it.exact) ? "bg-ink text-bg" : "text-muted hover:bg-sunken hover:text-ink",
+              )}
+            >
+              <it.icon className="size-4" aria-hidden />
+              {it.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="hidden border-t border-line p-4 lg:block">
+          <p className="truncate text-sm font-medium">{user.name}</p>
+          <p className="truncate text-xs text-muted">{user.email}</p>
+          <div className="mt-3 flex items-center justify-between">
+            <Link href="/app/billing" className="rounded-full bg-accent-soft px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-accent">
+              {user.plan}
+            </Link>
+            <button onClick={signOut} className="flex items-center gap-1.5 text-xs text-muted hover:text-ink">
+              <LogOut className="size-3.5" aria-hidden /> Sign out
+            </button>
+          </div>
+        </div>
+      </aside>
+      <main className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
+        <div className="mx-auto max-w-5xl">{children}</div>
+        <button onClick={signOut} className="mt-12 flex items-center gap-1.5 text-xs text-muted hover:text-ink lg:hidden">
+          <LogOut className="size-3.5" aria-hidden /> Sign out ({user.email})
+        </button>
+      </main>
+    </div>
+  );
+}

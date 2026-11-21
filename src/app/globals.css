@@ -1,26 +1,124 @@
-@import "tailwindcss";
+/* Scan only application source for class names. Scanning the whole project
+   picks up build logs and test output, which change on every request. */
+@import "tailwindcss" source(none);
+@source "../";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #f6f3ea;
+  --surface: #fffdf8;
+  --sunken: #efeadd;
+  --ink: #1b1a17;
+  --muted: #6a665d;
+  --line: #ded8c9;
+  --accent: #17604f;
+  --accent-soft: #dcebe4;
+  --on-accent: #fbfaf5;
+  --gold: #b97a14;
+  --gold-soft: #f6e8c9;
+  --danger: #a8321f;
+  --danger-soft: #f6dfd9;
+  --shadow: 0 1px 0 rgba(27, 26, 23, 0.04), 0 12px 32px -18px rgba(27, 26, 23, 0.28);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #11110f;
+    --surface: #1a1917;
+    --sunken: #0c0c0b;
+    --ink: #f0ebdf;
+    --muted: #a39d8f;
+    --line: #2e2c27;
+    --accent: #63c7ab;
+    --accent-soft: #17332c;
+    --on-accent: #0c1512;
+    --gold: #e3b458;
+    --gold-soft: #3a2f16;
+    --danger: #f08a75;
+    --danger-soft: #3a1c16;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 16px 36px -18px rgba(0, 0, 0, 0.7);
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-display), ui-serif, Georgia, serif;
+  --shadow-card: var(--shadow);
+}
+
+html {
+  color-scheme: light dark;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Fine paper grain behind marketing sections */
+.grain {
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .animate-spin,
+  .animate-pulse {
+    animation: none !important;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
 }
