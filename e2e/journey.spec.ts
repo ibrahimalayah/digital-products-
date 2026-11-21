@@ -37,7 +37,15 @@ test("public pages render and protect the studio", async ({ page }) => {
 test("security headers are set", async ({ request }) => {
   const res = await request.get("/");
   const h = res.headers();
-  expect(h["content-security-policy"]).toContain("frame-ancestors 'none'");
+  const csp = h["content-security-policy"];
+  expect(csp).toContain("frame-ancestors 'none'");
+  // Scripts need this request's nonce; inline scripts are not allowed in general.
+  const scriptSrc = csp.split(";").find((d) => d.trim().startsWith("script-src"))!;
+  expect(scriptSrc).toMatch(/'nonce-[A-Za-z0-9+/=]+'/);
+  expect(scriptSrc).not.toContain("unsafe-inline");
+  expect(scriptSrc).not.toContain("unsafe-eval");
+  const again = (await request.get("/")).headers()["content-security-policy"];
+  expect(again).not.toBe(csp); // a fresh nonce per request
   expect(h["x-frame-options"]).toBe("DENY");
   expect(h["x-content-type-options"]).toBe("nosniff");
   expect(h["x-powered-by"]).toBeUndefined();

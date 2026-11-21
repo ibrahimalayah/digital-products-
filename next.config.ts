@@ -1,22 +1,8 @@
 import type { NextConfig } from "next";
 
-const isProd = process.env.NODE_ENV === "production";
-
-// Content-Security-Policy: Stripe Checkout is a full-page redirect, so no
-// third-party script origins are needed. Inline styles are required by
-// next/font and React style props.
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self' https://checkout.stripe.com https://billing.stripe.com",
-  "object-src 'none'",
-].join("; ");
+// Pages get a per-request, nonce-based Content-Security-Policy from src/proxy.ts.
+// API responses are JSON or files and never need to load anything.
+const apiCsp = "default-src 'none'; frame-ancestors 'none'";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite", "@react-pdf/renderer", "pg"],
@@ -28,10 +14,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      { source: "/api/:path*", headers: [{ key: "Content-Security-Policy", value: apiCsp }] },
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy", value: csp },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

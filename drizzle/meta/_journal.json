@@ -8,6 +8,13 @@
       "when": 1795267223212,
       "tag": "0000_living_may_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795282774543,
+      "tag": "0001_black_vivisector",
+      "breakpoints": true
     }
   ]
 }

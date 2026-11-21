@@ -6,6 +6,7 @@ import { api, errorMessage } from "@/lib/client";
 import { AButton, Badge, Button, Card, Field, Input, LinkButton, Notice, Select, Textarea, statusTone } from "@/components/ui";
 import { ProductCover } from "@/components/product-cover";
 import type { Block, ProductOutline, ProductSection } from "@/lib/types";
+import { cn } from "@/lib/cn";
 
 export type StudioProduct = {
   id: string;
@@ -147,7 +148,21 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
   }
 
   const busy = progress !== null;
+  const stage = p.status === "published" ? 4 : p.status === "ready" ? 3 : hasPages || busy ? 2 : p.outline ? 1 : 0;
+  const stages = ["Brief", "Outline", "Pages", "Ready", "In store"].slice(0, isAdmin ? 5 : 4);
   return (
+    <>
+    <ol className="mb-8 flex items-center gap-2 overflow-x-auto text-sm" aria-label="Progress">
+      {stages.map((name, i) => (
+        <li key={name} className="flex shrink-0 items-center gap-2" aria-current={i === stage ? "step" : undefined}>
+          <span className={cn("grid size-6 place-items-center rounded-full text-xs", i < stage ? "bg-accent text-on-accent" : i === stage ? "bg-ink text-bg" : "border border-line text-muted")}>
+            {i < stage ? <Check className="size-3.5" aria-hidden /> : i + 1}
+          </span>
+          <span className={i <= stage ? "font-medium" : "text-muted"}>{name}</span>
+          {i < stages.length - 1 ? <span className={cn("h-px w-6 sm:w-10", i < stage ? "bg-accent" : "bg-line")} aria-hidden /> : null}
+        </li>
+      ))}
+    </ol>
     <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
       <div className="space-y-4 lg:sticky lg:top-8 lg:self-start">
         <ProductCover title={p.title} subtitle={p.outline?.subtitle || p.promise} accent={p.accent} />
@@ -326,5 +341,6 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
         </Card>
       </div>
     </div>
+    </>
   );
 }

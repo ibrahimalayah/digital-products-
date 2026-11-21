@@ -12,6 +12,7 @@ export default defineConfig({
       NODE_ENV: "test",
       AI_MOCK: "1",
       PGLITE_DIR: "memory",
+      DATABASE_URL: "", // never the real database, whatever the shell or .env.local contains
       STRIPE_SECRET_KEY: "sk_test_unit_only",
       STRIPE_WEBHOOK_SECRET: "whsec_unit_only_secret",
       CRON_SECRET: "cron-secret-for-tests-0123456789",

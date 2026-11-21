@@ -166,6 +166,17 @@ async function handle(event: Stripe.Event): Promise<"applied" | "ignored"> {
         await db.update(schema.orders).set({ status: "refunded" }).where(eq(schema.orders.stripeSessionId, sid));
         return "applied";
       }
+      case "charge.dispute.created": {
+        // A chargeback: the buyer's bank pulled the money back, so access ends.
+        const d = event.data.object as Stripe.Dispute;
+        const pi = typeof d.payment_intent === "string" ? d.payment_intent : d.payment_intent?.id;
+        if (!pi) return "ignored";
+        const sessions = await stripe().checkout.sessions.list({ payment_intent: pi, limit: 1 });
+        const sid = sessions.data[0]?.id;
+        if (!sid) return "ignored";
+        await db.update(schema.orders).set({ status: "disputed" }).where(eq(schema.orders.stripeSessionId, sid));
+        return "applied";
+      }
       default:
         return "ignored";
     }

@@ -10,6 +10,17 @@ import type { BudgetPlan } from "@/lib/types";
 export type BoardCampaign = { id: string; name: string; status: string; objective: string; monthlyBudgetCents: number; postsPerDay: number; plan: BudgetPlan | null };
 export type BoardPost = { id: string; channel: string; integrationId: string | null; angle: string; content: string; scheduledAt: string; status: string; error: string | null };
 
+const dayLabel = (iso: string) => new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(iso));
+
+function groupByDay(posts: BoardPost[]): [string, BoardPost[]][] {
+  const groups = new Map<string, BoardPost[]>();
+  for (const p of posts) {
+    const key = dayLabel(p.scheduledAt);
+    groups.set(key, [...(groups.get(key) ?? []), p]);
+  }
+  return [...groups.entries()];
+}
+
 function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: BoardPost) => void; onGone: (id: string) => void }) {
   const [text, setText] = useState(post.content);
   const [busy, setBusy] = useState<string | null>(null);
@@ -184,10 +195,13 @@ export function CampaignBoard({ campaign, initialPosts, postizConnected }: { cam
               ))}
             </div>
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-              {c.plan.allocations.map((a) => (
+              {c.plan.allocations.map((a, i) => (
                 <li key={a.channel} className="rounded-xl border border-line p-4">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-medium capitalize">{a.channel}</span>
+                    <span className="flex items-center gap-2 font-medium capitalize">
+                      <span className="size-2.5 rounded-full bg-accent" style={{ opacity: 1 - i * 0.18 }} aria-hidden />
+                      {a.channel}
+                    </span>
                     <span className="font-mono text-sm">
                       {a.percent}% · {money(Math.round((c.monthlyBudgetCents * a.percent) / 100))}
                     </span>
@@ -246,9 +260,22 @@ export function CampaignBoard({ campaign, initialPosts, postizConnected }: { cam
       {posts.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-line px-6 py-12 text-center text-sm text-muted">No posts yet. The daily poster writes {c.postsPerDay} a day once you ask, or automatically with autopilot on.</p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} onChange={(np) => setPosts((prev) => prev.map((x) => (x.id === np.id ? np : x)))} onGone={(id) => setPosts((prev) => prev.filter((x) => x.id !== id))} />
+        <div className="space-y-8">
+          {groupByDay(posts).map(([day, items]) => (
+            <section key={day} aria-label={day}>
+              <h3 className="mb-3 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+                {day}
+                <span className="h-px flex-1 bg-line" aria-hidden />
+                <span>
+                  {items.length} post{items.length === 1 ? "" : "s"}
+                </span>
+              </h3>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {items.map((p) => (
+                  <PostCard key={p.id} post={p} onChange={(np) => setPosts((prev) => prev.map((x) => (x.id === np.id ? np : x)))} onGone={(id) => setPosts((prev) => prev.filter((x) => x.id !== id))} />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}

@@ -122,7 +122,7 @@ export function Badge({ tone = "neutral", children }: { tone?: Tone; children: R
 export function statusTone(status: string): Tone {
   if (["published", "active", "scheduled", "ok", "paid"].includes(status)) return "accent";
   if (["generating", "approved", "ready", "sending"].includes(status)) return "gold";
-  if (["failed", "error", "refunded", "suspended"].includes(status)) return "danger";
+  if (["failed", "error", "refunded", "disputed", "suspended"].includes(status)) return "danger";
   return "neutral";
 }
 

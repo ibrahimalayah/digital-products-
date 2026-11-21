@@ -30,7 +30,7 @@ With no `DATABASE_URL`, development uses an embedded Postgres stored in `.data/`
 ## Tests
 
 ```bash
-npm test             # 66 unit and integration tests against an in-memory Postgres
+npm test             # 68 unit and integration tests against an in-memory Postgres
 npm run test:e2e     # 6 browser journeys against a production build
 npm run typecheck && npm run lint
 ```
@@ -56,7 +56,7 @@ Then set these environment variables (Production and Preview):
 | `NEXT_PUBLIC_APP_URL` | Public URL, used in checkout redirects and post links |
 | `STRIPE_WEBHOOK_SECRET` | From a Stripe webhook pointing at `/api/stripe/webhook` |
 
-Stripe webhook events to enable: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`.
+Stripe webhook events to enable: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `charge.dispute.created`.
 
 Migrations in `drizzle/` are applied automatically during `npm run build` when `DATABASE_URL` is set.
 

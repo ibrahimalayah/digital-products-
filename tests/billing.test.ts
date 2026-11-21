@@ -11,6 +11,14 @@ import { makeUser } from "./helpers";
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers(), cookies: async () => ({ get: () => undefined, set: () => undefined }) }));
 
+// Only the session lookup used by refund and dispute handling is stubbed; signature checks stay real.
+const stripeList = vi.fn();
+vi.mock("@/lib/stripe", async () => {
+  const { default: Stripe } = await import("stripe");
+  const real = new Stripe("sk_test_unit_only");
+  return { stripe: () => ({ webhooks: real.webhooks, checkout: { sessions: { list: stripeList } } }) };
+});
+
 const event = (type: string, object: Record<string, unknown>, id = newId("evt")) => ({ id, type, data: { object } }) as unknown as Stripe.Event;
 const brief = { title: "Kit", promise: "A clear result in a week.", audience: "Busy people", format: "Templates" };
 
@@ -31,6 +39,19 @@ describe("stripe events", () => {
     const [fresh] = await db.select().from(schema.products).where(eq(schema.products.id, p.id));
     expect(fresh.salesCount).toBe(1);
     expect(await canDownload(buyer, p.id)).not.toBeNull();
+  });
+
+  it("ends access when the buyer files a chargeback", async () => {
+    const seller = await makeUser({ role: "admin" });
+    const buyer = await makeUser();
+    const p = await createProduct(seller, brief);
+    const sid = newId("cs");
+    await applyStripeEvent(event("checkout.session.completed", { id: sid, payment_status: "paid", amount_total: 900, currency: "usd", metadata: { kind: "product", productId: p.id, userId: buyer.id } }));
+    expect(await canDownload(buyer, p.id)).not.toBeNull();
+    stripeList.mockResolvedValueOnce({ data: [{ id: sid }] });
+    expect(await applyStripeEvent(event("charge.dispute.created", { id: "dp_1", payment_intent: "pi_1" }))).toBe("applied");
+    expect(stripeList).toHaveBeenCalledWith({ payment_intent: "pi_1", limit: 1 });
+    expect(await canDownload(buyer, p.id)).toBeNull();
   });
 
   it("ignores unpaid sessions", async () => {

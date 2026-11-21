@@ -235,6 +235,7 @@ export const posts = pgTable(
     status: text("status").default("draft").notNull(),
     externalId: text("external_id"),
     error: text("error"),
+    sendingAt: timestamp("sending_at"), // when a publish attempt claimed the post
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [

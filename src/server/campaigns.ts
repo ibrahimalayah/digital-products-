@@ -228,6 +228,20 @@ export async function updatePost(userId: string, id: string, patch: { content?: 
   return row;
 }
 
+/**
+ * A publish attempt that never finished (the function was killed mid-call)
+ * leaves a post in "sending". We cannot know whether Postiz received it, so it
+ * is marked failed with a note rather than resent automatically.
+ */
+export async function releaseStuckPosts(now = new Date()): Promise<number> {
+  const rows = await db
+    .update(schema.posts)
+    .set({ status: "failed", error: "Publishing was interrupted. Check Postiz before publishing again to avoid a duplicate." })
+    .where(and(eq(schema.posts.status, "sending"), lt(schema.posts.sendingAt, new Date(now.getTime() - 15 * 60_000))))
+    .returning({ id: schema.posts.id });
+  return rows.length;
+}
+
 export async function deletePost(userId: string, id: string) {
   await db.delete(schema.posts).where(and(eq(schema.posts.id, id), eq(schema.posts.userId, userId)));
 }
@@ -244,7 +258,7 @@ export async function publishPost(userId: string, id: string, apiKey?: string | 
   if (!key) throw badRequest("Connect your Postiz API key in Settings to publish.");
   const claimed = await db
     .update(schema.posts)
-    .set({ status: "sending", error: null })
+    .set({ status: "sending", error: null, sendingAt: new Date() })
     .where(and(eq(schema.posts.id, p.id), sql`${schema.posts.status} in ('draft','approved','failed')`))
     .returning({ id: schema.posts.id });
   if (!claimed.length) return getOwnedPost(userId, id);

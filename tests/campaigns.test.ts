@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { createProduct } from "@/server/products";
-import { createCampaign, generateDayPosts, getOwnedCampaign, planCampaign, publishPost, updateCampaign, updatePost } from "@/server/campaigns";
+import { createCampaign, generateDayPosts, getOwnedCampaign, planCampaign, publishPost, releaseStuckPosts, updateCampaign, updatePost } from "@/server/campaigns";
 import { getPostizKey, publicSettings, updateSettings } from "@/server/settings";
 import { runAutopilot } from "@/server/autopilot";
 import { makeUser } from "./helpers";
@@ -127,6 +127,21 @@ describe("publishing through Postiz", () => {
     expect(failed.status).toBe("failed");
     mockPostiz();
     expect((await publishPost(user.id, post.id, "key")).status).toBe("scheduled");
+  });
+
+  it("releases posts stuck mid-publish as failed, without resending them", async () => {
+    const { user, base } = await setup();
+    const c = await createCampaign(user, base);
+    const [post] = await generateDayPosts(user, c.id);
+    const calls = mockPostiz();
+    await db.update(schema.posts).set({ status: "sending", sendingAt: new Date(Date.now() - 60 * 60_000) }).where(eq(schema.posts.id, post.id));
+    // A fresh attempt is left alone; a stale one is released.
+    expect(await releaseStuckPosts(new Date(Date.now() - 50 * 60_000))).toBe(0);
+    expect(await releaseStuckPosts()).toBe(1);
+    const [row] = await db.select().from(schema.posts).where(eq(schema.posts.id, post.id));
+    expect(row.status).toBe("failed");
+    expect(row.error).toMatch(/interrupted/);
+    expect(calls.filter((x) => x.url.endsWith("/posts"))).toHaveLength(0);
   });
 
   it("refuses to publish channels without a Postiz integration", async () => {

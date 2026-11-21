@@ -5,7 +5,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 
 async function main() {
-  const url = process.env.DATABASE_URL;
+  // Schema changes go over the direct connection when one is provided (Neon), not the pooler.
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (!url) {
     console.log("[migrate] DATABASE_URL not set, skipping.");
     return;

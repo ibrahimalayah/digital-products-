@@ -1,7 +1,7 @@
 import { and, eq, gte, inArray, lt } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getPlan } from "@/lib/plans";
-import { generateDayPosts, publishPost } from "./campaigns";
+import { generateDayPosts, publishPost, releaseStuckPosts } from "./campaigns";
 import { getPostizKey } from "./settings";
 import { logRun } from "./agents-log";
 
@@ -15,6 +15,7 @@ export type AutopilotReport = { users: number; campaigns: number; written: numbe
  */
 export async function runAutopilot(now = new Date()): Promise<AutopilotReport> {
   const report: AutopilotReport = { users: 0, campaigns: 0, written: 0, published: 0, failed: 0 };
+  await releaseStuckPosts(now);
   const owners = await db
     .select({ user: schema.user, settings: schema.settings })
     .from(schema.settings)

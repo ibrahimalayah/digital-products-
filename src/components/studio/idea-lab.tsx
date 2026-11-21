@@ -86,13 +86,27 @@ export function IdeaLab({ initial, remaining }: { initial: Idea[]; remaining: nu
         ) : null}
       </Card>
 
-      {ideas.length === 0 ? (
+      {busy ? (
+        <div className="grid gap-4 md:grid-cols-2" aria-hidden>
+          {[0, 1].map((i) => (
+            <div key={i} className="rounded-2xl border border-line bg-surface p-6">
+              <div className="skeleton h-3 w-24" />
+              <div className="skeleton mt-3 h-8 w-3/4" />
+              <div className="skeleton mt-5 h-3 w-full" />
+              <div className="skeleton mt-2 h-3 w-5/6" />
+              <div className="skeleton mt-5 h-3 w-2/3" />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {ideas.length === 0 && busy ? null : ideas.length === 0 ? (
         <Empty title="No ideas yet" body="Describe who you want to help. The scout comes back with six specific products you could build today." />
       ) : (
         <ol className="grid gap-4 md:grid-cols-2">
           {ideas.map((i) => (
             <li key={i.id}>
-              <Card className="flex h-full flex-col p-6">
+              <Card className="lift flex h-full flex-col p-6">
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{i.niche}</p>
                   <button onClick={() => remove(i.id)} className="text-muted hover:text-danger" aria-label={`Delete idea ${i.title}`}>
