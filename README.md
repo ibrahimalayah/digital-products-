@@ -25,11 +25,11 @@ The control panel has an "Add the starter product" button. It puts a finished, h
 
 ## AI providers
 
-Any one of these switches the agents on: `GOOGLE_GENERATIVE_AI_API_KEY` (free key from Google AI Studio), `ANTHROPIC_API_KEY`, or Vercel AI Gateway (automatic on Vercel, but the account needs a card). `/admin/system` shows which is active.
+The agents use a free-tier chain ported from the Rekrutify project, tried in order with automatic failover: FreeLLMAPI (local only), Groq (`GROQ_API_KEY`), Google Gemini (`GEMINI_API_KEY`), OpenRouter (`OPENROUTER_API_KEY`), then OpenAI. If none is set or all fail, Anthropic (`ANTHROPIC_API_KEY`) or Vercel AI Gateway is used; the gateway needs a card on the Vercel account. `/admin/system` shows the active order.
 
 ## Local demo
 
-`npm run demo` runs a production build on http://localhost:3000 with a throwaway local database and sample AI content. In a second terminal, `node scripts/demo-setup.mjs` creates an owner account, adds the starter product and publishes it; the sign-in details are written to `.demo-credentials.local`.
+`npm run demo:live` does the same with real AI (it reads the AI keys in `.env.local`). `npm run demo` runs a production build on http://localhost:3000 with a throwaway local database and sample AI content. In a second terminal, `node scripts/demo-setup.mjs` creates an owner account, adds the starter product and publishes it; the sign-in details are written to `.demo-credentials.local`.
 
 ## Brand photos
 
@@ -51,7 +51,7 @@ With no `DATABASE_URL`, development uses an embedded Postgres stored in `.data/`
 ## Tests
 
 ```bash
-npm test             # 77 unit and integration tests against an in-memory Postgres
+npm test             # 88 unit and integration tests against an in-memory Postgres
 npm run test:e2e     # 6 browser journeys against a production build
 npm run typecheck && npm run lint
 ```

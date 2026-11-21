@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-const PORT = 3100;
+const PORT = 3187; // an uncommon port, so it does not collide with other local dev servers
 
 export default defineConfig({
   testDir: "./e2e",

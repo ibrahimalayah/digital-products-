@@ -1,22 +1,24 @@
 import { generateText, Output, type LanguageModel } from "ai";
-import { google } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { AppError } from "./errors";
 import type { BudgetPlan, ProductOutline, ProductSection } from "./types";
 import * as fixture from "./ai-fixture";
+import { chainProviders, completeJson } from "./ai-chain";
 
 /**
- * Which model answers. In order: a direct Google key (free tier available), a
- * direct Anthropic key, otherwise Vercel AI Gateway ("provider/model").
- * AI_MODEL overrides the model name for whichever provider is active.
+ * Which model answers when the free-tier chain (src/lib/ai-chain.ts) is not
+ * configured or has failed: a direct Anthropic key, otherwise Vercel AI Gateway
+ * ("provider/model"). AI_MODEL overrides the model name.
  */
 function model(): LanguageModel {
   const override = process.env.AI_MODEL;
-  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return google(override || "gemini-flash-latest");
   if (process.env.ANTHROPIC_API_KEY) return anthropic(override || "claude-sonnet-5-5");
   return override || "anthropic/claude-sonnet-5.5";
 }
+
+// The SDK path is worth trying only when something can answer it.
+const sdkAvailable = () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL);
 
 // Deterministic fixtures for automated tests. Never active on Vercel, and in a
 // production build only when the end-to-end test flag is also set.
@@ -24,6 +26,16 @@ const fixtureMode = () =>
   process.env.AI_MOCK === "1" && !process.env.VERCEL && (process.env.NODE_ENV !== "production" || process.env.E2E === "1");
 
 async function structured<T extends z.ZodType>(schema: T, system: string, prompt: string, maxOutputTokens = 6000) {
+  // 1. The free-tier chain (Groq, Gemini, OpenRouter, ...), with failover.
+  const chained = await completeJson(schema, system, prompt, maxOutputTokens);
+  if (chained.ok) return chained.value as z.infer<T>;
+  if (!sdkAvailable()) {
+    if (chained.reason === "none_configured") {
+      throw new AppError(503, "ai_not_ready", "AI is not switched on for this site yet. The owner needs to finish the AI setup in the control panel under System.");
+    }
+    throw new AppError(502, "ai_failed", "The AI service did not return a usable result. Try again in a moment.");
+  }
+  // 2. Anthropic or Vercel AI Gateway.
   try {
     const { output } = await generateText({
       model: model(),
@@ -39,7 +51,7 @@ async function structured<T extends z.ZodType>(schema: T, system: string, prompt
     const message = e instanceof Error ? e.message : String(e);
     console.error("[ai]", message);
     // Setup problems get a clear, different answer from a one-off model failure.
-    if (/credit card|api key|unauthorized|authentication|not authenticated|quota|billing/i.test(message)) {
+    if (chainProviders().length === 0 && /credit card|api key|unauthorized|authentication|not authenticated|quota|billing/i.test(message)) {
       throw new AppError(503, "ai_not_ready", "AI is not switched on for this site yet. The owner needs to finish the AI setup in the control panel under System.");
     }
     throw new AppError(502, "ai_failed", "The AI service did not return a usable result. Try again in a moment.");
@@ -75,7 +87,7 @@ export async function researchIdeas(niche: string, brandVoice: string): Promise<
     `Propose 6 distinct digital product ideas for this niche.\n${fence("niche", niche)}\n${brandVoice ? fence("brand_voice", brandVoice) : ""}\n\n` +
       "For each idea give:\n" +
       "- title: a concrete product name (max 8 words)\n" +
-      "- promise: one sentence with the specific result the buyer gets\n" +
+      "- promise: one sentence with the specific result the buyer gets. Describe what they will have or be able to do, never a guaranteed amount of money, income or a guaranteed deadline for being debt-free\n" +
       "- audience: exactly who it is for and the moment they need it\n" +
       "- format: what is inside (for example '4 letter templates, a call script and a checklist')\n" +
       "- proof: two short sentences on why people would pay for this, then the exact search phrases the owner should check to confirm demand. Do not state numbers.\n" +
@@ -96,11 +108,13 @@ const outlineSchema = z.object({
   extras: z.array(z.string()),
 });
 
+// Models often leave out fields that do not apply to a block type, so the
+// unused ones are optional here and filled in after parsing.
 const blockSchema = z.object({
   type: z.enum(["paragraph", "steps", "checklist", "tip", "stuck", "template", "fill"]),
-  title: z.string(),
-  text: z.string(),
-  items: z.array(z.string()),
+  title: z.string().nullish(),
+  text: z.string().nullish(),
+  items: z.array(z.string()).nullish(),
 });
 const sectionSchema = z.object({
   pages: z.array(z.object({ heading: z.string(), goal: z.string(), blocks: z.array(blockSchema) })),
@@ -146,7 +160,7 @@ export async function writeSection(p: ProductBrief, outline: ProductOutline, ind
       `${fence("all_sections", outline.sections.map((s, i) => `${i + 1}. ${s.title}`).join("\n"))}\n` +
       `${fence("this_section", `${target.title}: ${target.summary}`)}\n` +
       `${fence("pages_to_write", target.pageTitles.join("\n"))}\n\n` +
-      "Write one page per page title, in order. Each page has a heading, a one-sentence goal, and 3 to 5 blocks. Block types:\n" +
+      "Write one page per page title, in order. Each page has a heading, a one-sentence goal, and 4 to 6 blocks that together fill a printed page. Block types:\n" +
       "- paragraph: explanation in `text` (2 to 4 sentences)\n" +
       "- steps: numbered actions in `items`, with a `title`\n" +
       "- checklist: tick-box items in `items`, with a `title`\n" +
@@ -154,10 +168,18 @@ export async function writeSection(p: ProductBrief, outline: ProductOutline, ind
       "- fill: questions the reader answers by hand in `items` (prompts), with a `title`\n" +
       "- tip: one pro tip in `text`\n" +
       "- stuck: what to do if this step is not working, in `text`\n" +
-      "Unused fields are empty strings or empty arrays. Each page should fit on one printed page (roughly 220 words). Include at least one tip or stuck block per page.",
+      "Unused fields are empty strings or empty arrays. Aim for 180 to 240 words per page: a half-empty page looks unfinished. Every page needs at least one block the reader writes on or ticks (steps, checklist, fill or template) and at least one tip or stuck block.",
     7000,
   );
-  return { title: target.title, summary: target.summary, pages: out.pages.slice(0, 6) };
+  // Fill in omitted fields and drop blocks that came back with nothing in them.
+  const pages = out.pages.slice(0, 6).map((pg) => ({
+    heading: pg.heading,
+    goal: pg.goal,
+    blocks: pg.blocks
+      .map((b) => ({ type: b.type, title: b.title ?? "", text: b.text ?? "", items: b.items ?? [] }))
+      .filter((b) => b.text.trim() || b.items.length),
+  }));
+  return { title: target.title, summary: target.summary, pages };
 }
 
 /* ───────────── Campaigns ───────────── */
@@ -216,6 +238,9 @@ export function normalisePlan(plan: BudgetPlan, channels: string[]): BudgetPlan 
   return { ...plan, allocations: picked, angles: plan.angles.slice(0, 8), kpis: plan.kpis.slice(0, 5) };
 }
 
+/** Every shape the agents ask a model for. Exported so tests can check each one can be sent. */
+export const AI_SCHEMAS = () => ({ ideasSchema, outlineSchema, sectionSchema, planSchema, postsSchema });
+
 const postsSchema = z.object({
   posts: z.array(z.object({ channel: z.string(), angle: z.string(), content: z.string() })),
 });
@@ -236,6 +261,15 @@ export const CHANNEL_LIMITS: Record<string, number> = {
   pinterest: 500,
 };
 export const limitFor = (channel: string) => CHANNEL_LIMITS[channel] ?? 2000;
+
+/** Shortens a post to a network's limit at a word boundary, never mid-word or mid-hashtag. */
+export function trimToLimit(content: string, max: number): string {
+  if (content.length <= max) return content;
+  const cut = content.slice(0, max - 1);
+  const lastSpace = cut.search(/\s\S*$/);
+  const kept = (lastSpace > max * 0.5 ? cut.slice(0, lastSpace) : cut).replace(/[\s#,;:-]+$/, "");
+  return kept + "…";
+}
 
 export type PostDraft = { channel: string; angle: string; content: string };
 
@@ -266,7 +300,7 @@ export async function writePosts(
     const d = drafts[i] ?? drafts.find((x) => x.channel === channel) ?? drafts[0];
     const max = limitFor(channel);
     let content = (d?.content ?? "").trim();
-    if (content.length > max) content = content.slice(0, max - 1).trimEnd() + "…";
+    if (content.length > max) content = trimToLimit(content, max);
     return { channel, angle: (d?.angle ?? "").slice(0, 80), content };
   });
 }

@@ -25,14 +25,30 @@ export const integrations = {
   stripeWebhook: () => Boolean(process.env.STRIPE_WEBHOOK_SECRET),
   ai: () =>
     Boolean(
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.GROQ_API_KEY ||
+        process.env.GEMINI_API_KEY ||
+        process.env.OPENROUTER_API_KEY ||
+        (process.env.FREELLMAPI_BASE_URL && process.env.FREELLMAPI_API_KEY) ||
+        process.env.OPENAI_API_KEY ||
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
         process.env.ANTHROPIC_API_KEY ||
         process.env.AI_GATEWAY_API_KEY ||
         process.env.VERCEL_OIDC_TOKEN ||
         process.env.VERCEL,
     ),
-  aiProvider: () =>
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Google Gemini (direct key)" : process.env.ANTHROPIC_API_KEY ? "Anthropic (direct key)" : "Vercel AI Gateway",
+  aiProvider: () => {
+    const chain = [
+      process.env.FREELLMAPI_BASE_URL && process.env.FREELLMAPI_API_KEY ? "FreeLLMAPI" : "",
+      process.env.GROQ_API_KEY ? "Groq" : "",
+      process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Gemini" : "",
+      process.env.OPENROUTER_API_KEY ? "OpenRouter" : "",
+      process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEYS ? "OpenAI" : "",
+    ].filter(Boolean);
+    const last = process.env.ANTHROPIC_API_KEY ? "Anthropic" : "Vercel AI Gateway";
+    return chain.length ? `${chain.join(" → ")}, then ${last}` : last;
+  },
+  /** True when at least one free-tier or OpenAI key is set, so AI works without the gateway. */
+  aiChain: () => Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEYS || (process.env.FREELLMAPI_BASE_URL && process.env.FREELLMAPI_API_KEY)),
   cron: () => Boolean(process.env.CRON_SECRET),
   encryption: () => Boolean(process.env.ENCRYPTION_KEY),
 };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decrypt, encrypt, safeEqual } from "@/lib/crypto";
-import { normalisePlan } from "@/lib/ai";
+import { normalisePlan, trimToLimit } from "@/lib/ai";
 import { assertSameOrigin } from "@/lib/api";
 import { consume, getUsage, refund } from "@/lib/usage";
 import { rateLimit } from "@/lib/rate-limit";
@@ -118,5 +118,17 @@ describe("AI call guard", () => {
     const user = await makeUser();
     for (let i = 0; i < 20; i++) await aiGuard(user); // burst window allows 20 a minute
     await expect(aiGuard(user)).rejects.toMatchObject({ status: 429 });
+  });
+});
+
+describe("post length limit", () => {
+  it("cuts at a word boundary and never mid-hashtag", () => {
+    const text = "Noticing surprise charges on your statement? Clear them out in 15 minutes with the audit kit. https://example.com/p #PersonalFinance #Budgeting";
+    const out = trimToLimit(text, 125);
+    expect(out.length).toBeLessThanOrEqual(125);
+    expect(out.endsWith("…")).toBe(true);
+    expect(out).not.toMatch(/#\w*…$/);
+    expect(text.startsWith(out.slice(0, -1))).toBe(true);
+    expect(trimToLimit("short", 280)).toBe("short");
   });
 });
