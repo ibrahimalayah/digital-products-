@@ -160,6 +160,89 @@ test("creator journey: idea → product → PDF → campaign → posts", async (
   expect(errors.filter((e) => !/status of (402|403)/.test(e))).toEqual([]);
 });
 
+test("returning user signs in and uses every remaining screen", async ({ page }) => {
+  const errors = watchConsole(page);
+
+  // Wrong password is refused, the right one signs in.
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill("not-the-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator("p[role=alert]")).toBeVisible();
+  await expect(page).toHaveURL(/\/sign-in/);
+  await shot(page, "12-sign-in.png");
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByRole("heading", { name: "Getting started" })).toBeVisible();
+  await expect(page.getByText("3 of 4 done")).toBeVisible();
+  await shot(page, "13-overview-returning.png");
+
+  // Theme switch persists across reloads.
+  await page.getByRole("button", { name: "Switch to dark theme" }).first().click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await shot(page, "14-overview-dark.png");
+  await page.getByRole("button", { name: "Switch to light theme" }).first().click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  // Settings
+  await page.goto("/app/settings");
+  await page.getByLabel("Brand name").fill("Calm Money Studio");
+  await page.getByLabel("Brand voice").fill("Plain-spoken and encouraging.");
+  await page.getByRole("button", { name: "Save brand" }).click();
+  await expect(page.getByText("Brand saved.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Brand name")).toHaveValue("Calm Money Studio");
+  await expect(page.getByText("Not connected")).toBeVisible();
+  await shot(page, "15-settings.png");
+
+  // Billing and library
+  await page.goto("/app/billing");
+  await expect(page.getByText("Payments are not connected")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upgrade to Pro" })).toBeDisabled();
+  await shot(page, "16-billing.png");
+  await page.goto("/app/library");
+  await expect(page.getByText("Nothing here yet")).toBeVisible();
+
+  // Control panel: change own plan, then autopilot unlocks.
+  await page.goto("/admin/users");
+  await page.getByLabel(`Plan for ${email}`).selectOption("business");
+  await page.goto("/app/agents");
+  const autopilot = page.getByRole("switch", { name: "Daily autopilot" });
+  await expect(autopilot).toBeEnabled();
+  await autopilot.click();
+  await expect(autopilot).toHaveAttribute("aria-checked", "true");
+  await page.reload();
+  await expect(page.getByRole("switch", { name: "Daily autopilot" })).toHaveAttribute("aria-checked", "true");
+
+  // Activate the campaign and run the autopilot by hand.
+  await page.goto("/app/campaigns");
+  await page.getByRole("link", { name: /Launch week/ }).click();
+  await page.getByRole("button", { name: "Activate" }).click();
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Run daily autopilot now" }).click();
+  await expect(page.getByText(/Ran for 1 creator\(s\) and 1 campaign\(s\)/)).toBeVisible();
+  await page.goto("/admin/orders");
+  await expect(page.getByText("No orders yet")).toBeVisible();
+  await page.goto("/admin/products");
+  await expect(page.getByRole("link", { name: "puppy training Starter Kit 1" })).toBeVisible();
+  await shot(page, "17-admin-products.png");
+
+  // Editing a post and saving it sticks.
+  await page.goto("/app/campaigns");
+  await page.getByRole("link", { name: /Launch week/ }).click();
+  await page.getByRole("button", { name: "Unapprove" }).click();
+  await page.getByLabel("Post text").fill("Edited by hand before publishing.");
+  await page.getByRole("button", { name: "Save edit" }).click();
+  await page.reload();
+  await expect(page.getByLabel("Post text")).toHaveValue("Edited by hand before publishing.");
+
+  expect(errors.filter((e) => !/status of 401/.test(e))).toEqual([]);
+});
+
 test("a second account cannot reach the first account's data", async ({ page }) => {
   await page.goto("/sign-up");
   await page.getByLabel("Name").fill("Other Person");

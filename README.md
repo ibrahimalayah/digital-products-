@@ -10,6 +10,10 @@ An AI studio for digital products, with a public store and a creator SaaS in one
 6. **Plans** – Starter (free), Pro and Business subscriptions gate quotas, campaign budgets and autopilot.
 7. **Control panel** (`/admin`) – revenue, users, orders, products, integration status, manual autopilot run.
 
+## Brand photos
+
+The landing page, sign-in screens and store header use photos from `public/brand/` when they exist (`hero.jpg`, `auth.jpg`, `store.jpg`) and drawn artwork when they do not. See `public/brand/README.md`.
+
 ## Stack
 
 Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM on Postgres · Better Auth · Stripe · Vercel AI SDK via AI Gateway · `@react-pdf/renderer` · Vitest + Playwright.
@@ -27,7 +31,7 @@ With no `DATABASE_URL`, development uses an embedded Postgres stored in `.data/`
 
 ```bash
 npm test             # 66 unit and integration tests against an in-memory Postgres
-npm run test:e2e     # 5 browser journeys against a production build
+npm run test:e2e     # 6 browser journeys against a production build
 npm run typecheck && npm run lint
 ```
 

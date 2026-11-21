@@ -18,10 +18,13 @@
   --danger: #a8321f;
   --danger-soft: #f6dfd9;
   --shadow: 0 1px 0 rgba(27, 26, 23, 0.04), 0 12px 32px -18px rgba(27, 26, 23, 0.28);
+  --shadow-lift: 0 2px 0 rgba(27, 26, 23, 0.05), 0 32px 64px -28px rgba(27, 26, 23, 0.45);
+  color-scheme: light;
 }
 
+/* Dark theme: follows the system unless the visitor picked a theme. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #11110f;
     --surface: #1a1917;
     --sunken: #0c0c0b;
@@ -36,7 +39,28 @@
     --danger: #f08a75;
     --danger-soft: #3a1c16;
     --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 16px 36px -18px rgba(0, 0, 0, 0.7);
+    --shadow-lift: 0 2px 0 rgba(0, 0, 0, 0.3), 0 30px 60px -24px rgba(0, 0, 0, 0.85);
+    color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #11110f;
+  --surface: #1a1917;
+  --sunken: #0c0c0b;
+  --ink: #f0ebdf;
+  --muted: #a39d8f;
+  --line: #2e2c27;
+  --accent: #63c7ab;
+  --accent-soft: #17332c;
+  --on-accent: #0c1512;
+  --gold: #e3b458;
+  --gold-soft: #3a2f16;
+  --danger: #f08a75;
+  --danger-soft: #3a1c16;
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 16px 36px -18px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 2px 0 rgba(0, 0, 0, 0.3), 0 30px 60px -24px rgba(0, 0, 0, 0.85);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -57,10 +81,11 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-display: var(--font-display), ui-serif, Georgia, serif;
   --shadow-card: var(--shadow);
+  --shadow-lift: var(--shadow-lift);
 }
 
 html {
-  color-scheme: light dark;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -112,7 +137,77 @@ p {
   animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+/* Sections ease in as they scroll into view, where the browser supports it. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.float {
+  animation: float 7s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  animation: marquee 38s linear infinite;
+}
+
+.marquee-mask {
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--sunken) 25%, var(--line) 50%, var(--sunken) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Lift on hover for interactive cards */
+.lift {
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 0.25s,
+    border-color 0.2s;
+}
+
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal,
+  .float,
+  .marquee,
+  .skeleton,
   .rise,
   .animate-spin,
   .animate-pulse {

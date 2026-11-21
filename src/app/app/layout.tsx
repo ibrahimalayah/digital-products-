@@ -10,5 +10,5 @@ export const metadata: Metadata = { title: { default: "Studio", template: "%s ·
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUserPage();
-  return <Shell user={{ name: user.name, email: user.email, plan: getPlan(user.plan).name, admin: user.role === "admin" }}>{children}</Shell>;
+  return <Shell user={{ name: user.name, email: user.email, plan: getPlan(user.plan).name, admin: user.role === "admin", upgrade: user.plan === "free" }}>{children}</Shell>;
 }

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Bot, CreditCard, FileText, LayoutDashboard, Library, Lightbulb, LogOut, Megaphone, Settings, ShieldCheck, Store } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "@/components/ui";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
 
 const nav = [
@@ -17,7 +18,7 @@ const nav = [
   { href: "/app/settings", label: "Settings", icon: Settings, exact: false },
 ];
 
-export function Shell({ user, children }: { user: { name: string; email: string; plan: string; admin: boolean }; children: React.ReactNode }) {
+export function Shell({ user, children }: { user: { name: string; email: string; plan: string; admin: boolean; upgrade?: boolean }; children: React.ReactNode }) {
   const path = usePathname();
   const items = user.admin ? [...nav, { href: "/admin", label: "Control panel", icon: ShieldCheck, exact: false }] : nav;
   const active = (href: string, exact: boolean) => (exact ? path === href : path === href || path.startsWith(`${href}/`));
@@ -29,14 +30,17 @@ export function Shell({ user, children }: { user: { name: string; email: string;
 
   return (
     <div className="flex min-h-screen flex-1 flex-col lg:flex-row">
-      <aside className="border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col lg:border-r">
+      <aside className="border-line bg-surface/50 lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col lg:border-r">
         <div className="flex h-16 items-center justify-between px-4 lg:px-5">
           <Link href="/app" aria-label="Studio home">
             <Logo />
           </Link>
-          <Link href="/store" className="text-muted hover:text-ink lg:hidden" aria-label="Store">
-            <Store className="size-5" />
-          </Link>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Link href="/store" className="grid size-9 place-items-center rounded-full text-muted hover:bg-sunken hover:text-ink" aria-label="Open the store" title="Open the store">
+              <Store className="size-[18px]" />
+            </Link>
+          </div>
         </div>
         <nav aria-label="Studio" className="flex gap-1 overflow-x-auto border-b border-line px-3 pb-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:border-0 lg:pb-0">
           {items.map((it) => (
@@ -54,9 +58,22 @@ export function Shell({ user, children }: { user: { name: string; email: string;
             </Link>
           ))}
         </nav>
+        {user.upgrade ? (
+          <Link href="/app/billing" className="mx-3 mb-3 hidden rounded-2xl bg-accent p-4 text-on-accent transition-opacity hover:opacity-90 lg:block">
+            <p className="text-sm font-medium">Unlock autopilot</p>
+            <p className="mt-0.5 text-xs opacity-80">Bigger budgets and daily posts on Pro.</p>
+          </Link>
+        ) : null}
         <div className="hidden border-t border-line p-4 lg:block">
+          <div className="flex items-center gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-sm font-medium text-bg" aria-hidden>
+              {user.name.trim().charAt(0).toUpperCase() || "K"}
+            </span>
+            <div className="min-w-0">
           <p className="truncate text-sm font-medium">{user.name}</p>
           <p className="truncate text-xs text-muted">{user.email}</p>
+            </div>
+          </div>
           <div className="mt-3 flex items-center justify-between">
             <Link href="/app/billing" className="rounded-full bg-accent-soft px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-accent">
               {user.plan}

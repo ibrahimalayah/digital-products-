@@ -31,7 +31,7 @@ export default async function Products() {
           {items.map((p) => (
             <li key={p.id}>
               <Link href={`/app/products/${p.id}`} className="group block">
-                <ProductCover title={p.title} subtitle={p.outline?.subtitle || p.promise} accent={p.accent} className="transition-transform duration-200 group-hover:-translate-y-1" />
+                <ProductCover title={p.title} subtitle={p.outline?.subtitle || p.promise} accent={p.accent} className="lift" />
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <Badge tone={statusTone(p.status)}>{p.status}</Badge>
                   <span className="font-mono text-sm">{money(p.priceCents)}</span>
