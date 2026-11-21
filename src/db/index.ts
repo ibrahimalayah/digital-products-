@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
@@ -38,7 +39,11 @@ function init(): Holder {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { migrate } = require("drizzle-orm/pglite/migrator") as typeof import("drizzle-orm/pglite/migrator");
   const dir = process.env.PGLITE_DIR;
-  const client = dir === "memory" || process.env.NODE_ENV === "test" ? new PGlite() : new PGlite(dir ?? ".data/pglite");
+  const inMemory = dir === "memory" || process.env.NODE_ENV === "test";
+  const dataDir = path.resolve(dir ?? ".data/pglite");
+  // PGlite creates its own folder but not the parents.
+  if (!inMemory) fs.mkdirSync(path.dirname(dataDir), { recursive: true });
+  const client = inMemory ? new PGlite() : new PGlite(dataDir);
   const d = drizzle(client, { schema });
   holder.db = d as unknown as Db;
   holder.ready = migrate(d, { migrationsFolder: MIGRATIONS });
