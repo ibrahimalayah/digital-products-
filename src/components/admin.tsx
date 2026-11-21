@@ -130,6 +130,33 @@ export function RunAutopilot() {
   );
 }
 
+export function AddStarter() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="space-y-3">
+      <Button
+        loading={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            const { product } = await api<{ product: { id: string } }>("/api/admin/starter", { method: "POST", body: {} });
+            router.push(`/app/products/${product.id}`);
+          } catch (e) {
+            setError(errorMessage(e));
+            setBusy(false);
+          }
+        }}
+      >
+        Add the starter product
+      </Button>
+      {error ? <Notice>{error}</Notice> : null}
+    </div>
+  );
+}
+
 export function ClaimAdmin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

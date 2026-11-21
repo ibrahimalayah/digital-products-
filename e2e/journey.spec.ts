@@ -239,6 +239,25 @@ test("returning user signs in and uses every remaining screen", async ({ page })
   await expect(page.getByRole("link", { name: "puppy training Starter Kit 1" })).toBeVisible();
   await shot(page, "17-admin-products.png");
 
+  // Starter product: one click gives the owner a finished planner to sell.
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Add the starter product" }).click();
+  await expect(page).toHaveURL(/\/app\/products\/prod_/);
+  await expect(page.getByText("4/4 sections")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your money snapshot" })).toBeVisible();
+  await shot(page, "18-starter-product.png");
+  const starterId = page.url().split("/").pop()!;
+  const starterPdf = await page.request.get(`/api/products/${starterId}/pdf`);
+  expect(starterPdf.status()).toBe(200);
+  expect((await starterPdf.body()).length).toBeGreaterThan(20_000);
+  await page.getByRole("button", { name: "Publish to store" }).click();
+  await expect(page.getByRole("button", { name: "Remove from store" })).toBeVisible();
+  await page.goto("/store");
+  await page.getByRole("link", { name: /Money Reset 2027/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /Money Reset 2027/ })).toBeVisible();
+  await expect(page.getByText("10 pages")).toBeVisible();
+  await shot(page, "19-starter-store.png");
+
   // Editing a post and saving it sticks.
   await page.goto("/app/campaigns");
   await page.getByRole("link", { name: /Launch week/ }).click();

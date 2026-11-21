@@ -10,6 +10,18 @@ An AI studio for digital products, with a public store and a creator SaaS in one
 6. **Plans** – Starter (free), Pro and Business subscriptions gate quotas, campaign budgets and autopilot.
 7. **Control panel** (`/admin`) – revenue, users, orders, products, integration status, manual autopilot run.
 
+## Starter product
+
+The control panel has an "Add the starter product" button. It puts a finished, hand-edited 10-page planner ("Money Reset 2027: The 30-Day Budget Planner") on the owner's shelf, ready to price and publish. It needs no AI.
+
+## AI providers
+
+Any one of these switches the agents on: `GOOGLE_GENERATIVE_AI_API_KEY` (free key from Google AI Studio), `ANTHROPIC_API_KEY`, or Vercel AI Gateway (automatic on Vercel, but the account needs a card). `/admin/system` shows which is active.
+
+## Local demo
+
+`npm run demo` runs a production build on http://localhost:3000 with a throwaway local database and sample AI content. In a second terminal, `node scripts/demo-setup.mjs` creates an owner account, adds the starter product and publishes it; the sign-in details are written to `.demo-credentials.local`.
+
 ## Brand photos
 
 The landing page, sign-in screens and store header use photos from `public/brand/` when they exist (`hero.jpg`, `auth.jpg`, `store.jpg`) and drawn artwork when they do not. See `public/brand/README.md`.
@@ -30,7 +42,7 @@ With no `DATABASE_URL`, development uses an embedded Postgres stored in `.data/`
 ## Tests
 
 ```bash
-npm test             # 68 unit and integration tests against an in-memory Postgres
+npm test             # 70 unit and integration tests against an in-memory Postgres
 npm run test:e2e     # 6 browser journeys against a production build
 npm run typecheck && npm run lint
 ```

@@ -24,7 +24,15 @@ export const integrations = {
   stripe: () => Boolean(process.env.STRIPE_SECRET_KEY),
   stripeWebhook: () => Boolean(process.env.STRIPE_WEBHOOK_SECRET),
   ai: () =>
-    Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL),
+    Boolean(
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+        process.env.ANTHROPIC_API_KEY ||
+        process.env.AI_GATEWAY_API_KEY ||
+        process.env.VERCEL_OIDC_TOKEN ||
+        process.env.VERCEL,
+    ),
+  aiProvider: () =>
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Google Gemini (direct key)" : process.env.ANTHROPIC_API_KEY ? "Anthropic (direct key)" : "Vercel AI Gateway",
   cron: () => Boolean(process.env.CRON_SECRET),
   encryption: () => Boolean(process.env.ENCRYPTION_KEY),
 };

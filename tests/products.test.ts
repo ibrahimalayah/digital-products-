@@ -5,6 +5,7 @@ import { renderProductPdf } from "@/lib/pdf";
 import { db, schema } from "@/db";
 import { newId } from "@/lib/utils";
 import { makeUser } from "./helpers";
+import { addStarterProduct, STARTER } from "@/server/starter";
 
 const brief = { title: "Puppy Potty Plan", promise: "A calm, house-trained puppy in 28 days.", audience: "New puppy owners", format: "4 weekly guides and a tracker" };
 
@@ -115,5 +116,33 @@ describe("access control", () => {
     const p = await buildReady(admin);
     await db.insert(schema.orders).values({ id: newId("ord"), userId: buyer.id, productId: p.id, amountCents: 900, stripeSessionId: newId("cs"), status: "refunded" });
     expect(await canDownload(buyer, p.id)).toBeNull();
+  });
+});
+
+describe("starter product", () => {
+  it("is complete, printable, publishable and added only once", async () => {
+    const admin = await makeUser({ role: "admin" });
+    const p = await addStarterProduct(admin);
+    expect(p.status).toBe("ready");
+    expect(p.title).toBe(STARTER.title);
+    const pages = p.sections.flatMap((s) => s.pages);
+    expect(pages).toHaveLength(10);
+    expect(p.sections.map((s) => s.pages.map((x) => x.heading))).toEqual(p.outline!.sections.map((s) => s.pageTitles));
+    // No placeholders or empty blocks anywhere.
+    for (const page of pages) {
+      expect(page.blocks.length).toBeGreaterThanOrEqual(4);
+      for (const b of page.blocks) {
+        expect((b.text + b.items.join("")).length, page.heading).toBeGreaterThan(20);
+        expect(b.text + b.items.join(" ")).not.toMatch(/lorem|TODO|placeholder|insert here/i);
+      }
+    }
+    const pdf = await renderProductPdf({ ...p, brand: "Kitforge" });
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(pdf.length).toBeGreaterThan(20_000);
+    // Cover, welcome, contents, 4 section openers, 10 worksheets, 2 extras: every worksheet fits one page.
+    expect(pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g)).toHaveLength(19);
+    const live = await updateProduct(admin, p.id, { published: true });
+    expect(live.status).toBe("published");
+    await expect(addStarterProduct(admin)).rejects.toMatchObject({ status: 400 });
   });
 });

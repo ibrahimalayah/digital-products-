@@ -1,11 +1,22 @@
-import { generateText, Output } from "ai";
+import { generateText, Output, type LanguageModel } from "ai";
+import { google } from "@ai-sdk/google";
+import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { AppError } from "./errors";
 import type { BudgetPlan, ProductOutline, ProductSection } from "./types";
 import * as fixture from "./ai-fixture";
 
-// Routed through Vercel AI Gateway ("provider/model"). Override with AI_MODEL.
-const MODEL = process.env.AI_MODEL || "anthropic/claude-sonnet-5.5";
+/**
+ * Which model answers. In order: a direct Google key (free tier available), a
+ * direct Anthropic key, otherwise Vercel AI Gateway ("provider/model").
+ * AI_MODEL overrides the model name for whichever provider is active.
+ */
+function model(): LanguageModel {
+  const override = process.env.AI_MODEL;
+  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return google(override || "gemini-flash-latest");
+  if (process.env.ANTHROPIC_API_KEY) return anthropic(override || "claude-sonnet-5-5");
+  return override || "anthropic/claude-sonnet-5.5";
+}
 
 // Deterministic fixtures for automated tests. Never active on Vercel, and in a
 // production build only when the end-to-end test flag is also set.
@@ -15,7 +26,7 @@ const fixtureMode = () =>
 async function structured<T extends z.ZodType>(schema: T, system: string, prompt: string, maxOutputTokens = 6000) {
   try {
     const { output } = await generateText({
-      model: MODEL,
+      model: model(),
       system,
       prompt,
       maxOutputTokens,
@@ -25,7 +36,12 @@ async function structured<T extends z.ZodType>(schema: T, system: string, prompt
     });
     return output as z.infer<T>;
   } catch (e) {
-    console.error("[ai]", e instanceof Error ? e.message : e);
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[ai]", message);
+    // Setup problems get a clear, different answer from a one-off model failure.
+    if (/credit card|api key|unauthorized|authentication|not authenticated|quota|billing/i.test(message)) {
+      throw new AppError(503, "ai_not_ready", "AI is not switched on for this site yet. The owner needs to finish the AI setup in the control panel under System.");
+    }
     throw new AppError(502, "ai_failed", "The AI service did not return a usable result. Try again in a moment.");
   }
 }

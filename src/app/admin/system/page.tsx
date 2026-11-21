@@ -7,7 +7,12 @@ export const metadata: Metadata = { title: "System" };
 export default function AdminSystem() {
   const rows = [
     { name: "Database", ok: integrations.database(), fix: "Run `vercel integration add neon` and redeploy.", note: "Postgres. Without it the app only runs locally on embedded storage." },
-    { name: "AI Gateway", ok: integrations.ai(), fix: "Enable AI Gateway for the project or set AI_GATEWAY_API_KEY.", note: "Powers every agent." },
+    {
+      name: "AI provider",
+      ok: integrations.ai(),
+      fix: "Set GOOGLE_GENERATIVE_AI_API_KEY (free key from Google AI Studio) or ANTHROPIC_API_KEY, or add a card to Vercel AI Gateway.",
+      note: `${integrations.aiProvider()}. Powers every agent. Vercel AI Gateway also needs a card on the Vercel account before it answers.`,
+    },
     { name: "Stripe payments", ok: integrations.stripe(), fix: "Run `vercel integration add stripe`.", note: "Store checkout and plan subscriptions." },
     { name: "Stripe webhook", ok: integrations.stripeWebhook(), fix: "Add a webhook to /api/stripe/webhook and set STRIPE_WEBHOOK_SECRET.", note: "Confirms orders and plan changes." },
     { name: "Cron secret", ok: integrations.cron(), fix: "Set CRON_SECRET to a long random value.", note: "Protects the daily autopilot endpoint." },

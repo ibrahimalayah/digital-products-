@@ -18,7 +18,7 @@ const RULE = "#d9d4c8";
 const PAPER = "#fbf9f4";
 
 const s = StyleSheet.create({
-  page: { paddingTop: 56, paddingBottom: 64, paddingHorizontal: 56, fontFamily: "Helvetica", fontSize: 10.5, color: INK, lineHeight: 1.5 },
+  page: { paddingTop: 48, paddingBottom: 56, paddingHorizontal: 56, fontFamily: "Helvetica", fontSize: 10.5, color: INK, lineHeight: 1.5 },
   cover: { padding: 0, fontFamily: "Helvetica", color: INK, backgroundColor: PAPER },
   coverBand: { height: "46%", padding: 56, justifyContent: "flex-end" },
   coverBody: { padding: 56, flexGrow: 1, justifyContent: "space-between" },
@@ -27,18 +27,18 @@ const s = StyleSheet.create({
   eyebrow: { fontSize: 8.5, letterSpacing: 1.6, textTransform: "uppercase", color: MUTED, marginBottom: 8 },
   h1: { fontFamily: "Times-Bold", fontSize: 26, lineHeight: 1.15, marginBottom: 8 },
   h2: { fontFamily: "Times-Bold", fontSize: 20, lineHeight: 1.2, marginBottom: 6 },
-  goal: { fontSize: 11, color: MUTED, marginBottom: 16 },
+  goal: { fontSize: 11, color: MUTED, marginBottom: 12 },
   p: { marginBottom: 10 },
   blockTitle: { fontFamily: "Helvetica-Bold", fontSize: 10.5, marginBottom: 6 },
-  block: { marginBottom: 14 },
+  block: { marginBottom: 11 },
   row: { flexDirection: "row", marginBottom: 5 },
   num: { width: 20, fontFamily: "Helvetica-Bold" },
   box: { width: 10, height: 10, borderWidth: 1, borderColor: INK, borderRadius: 2, marginRight: 9, marginTop: 2 },
   flex: { flex: 1 },
-  callout: { borderLeftWidth: 3, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: PAPER, marginBottom: 14 },
+  callout: { borderLeftWidth: 3, paddingVertical: 7, paddingHorizontal: 12, backgroundColor: PAPER, marginBottom: 10 },
   calloutLabel: { fontFamily: "Helvetica-Bold", fontSize: 8.5, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 3 },
   template: { borderWidth: 1, borderColor: RULE, borderRadius: 4, padding: 12, fontFamily: "Courier", fontSize: 9.5, lineHeight: 1.45, marginBottom: 14 },
-  line: { borderBottomWidth: 1, borderBottomColor: RULE, height: 20, marginBottom: 2 },
+  line: { borderBottomWidth: 1, borderBottomColor: RULE, height: 17, marginBottom: 3 },
   footer: { position: "absolute", bottom: 28, left: 56, right: 56, flexDirection: "row", justifyContent: "space-between", fontSize: 8, color: MUTED },
   tocRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: RULE },
   tocSub: { fontSize: 9.5, color: MUTED, paddingVertical: 3, paddingLeft: 14 },
@@ -79,9 +79,8 @@ function BlockView({ b, accent }: { b: Block; accent: string }) {
         <View style={s.block}>
           {b.title ? <Text style={s.blockTitle}>{b.title}</Text> : null}
           {b.items.map((it, i) => (
-            <View key={i} wrap={false} style={{ marginBottom: 8 }}>
+            <View key={i} wrap={false} style={{ marginBottom: 3 }}>
               <Text>{it}</Text>
-              <View style={s.line} />
               <View style={s.line} />
             </View>
           ))}

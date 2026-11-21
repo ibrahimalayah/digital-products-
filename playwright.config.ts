@@ -21,6 +21,7 @@ export default defineConfig({
       PGLITE_DIR: "memory",
       ALLOW_EMBEDDED_DB: "1",
       E2E: "1",
+      NEXT_DIST_DIR: ".next-e2e",
       BETTER_AUTH_SECRET: "e2e-only-secret-0123456789abcdef0123456789",
       AI_MOCK: "1",
       DATABASE_URL: "",

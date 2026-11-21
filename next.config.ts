@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 const apiCsp = "default-src 'none'; frame-ancestors 'none'";
 
 const nextConfig: NextConfig = {
+  // The browser tests build into their own folder so they never disturb a running server.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   serverExternalPackages: ["@electric-sql/pglite", "@react-pdf/renderer", "pg"],
   poweredByHeader: false,
   turbopack: {
