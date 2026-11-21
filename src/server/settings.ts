@@ -3,7 +3,7 @@ import { db, schema } from "@/db";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getPlan } from "@/lib/plans";
 import { badRequest, limitReached } from "@/lib/errors";
-import { listChannels } from "@/lib/postiz";
+import { isPublisher, listChannels, type PublisherAuth, type PublisherKind } from "@/lib/publishers";
 import type { CurrentUser } from "@/lib/session";
 
 export async function getSettings(userId: string) {
@@ -15,24 +15,27 @@ export async function getSettings(userId: string) {
   return again;
 }
 
-/** Client-safe view: the Postiz key is reduced to a boolean. */
+/** Client-safe view: the publishing key is reduced to a boolean. */
 export async function publicSettings(userId: string) {
   const s = await getSettings(userId);
+  const auth = await getPublisher(userId);
   return {
     brandName: s.brandName,
     brandVoice: s.brandVoice,
     autopilot: s.autopilot,
     autoApprove: s.autoApprove,
+    publisher: (isPublisher(s.publisher) ? s.publisher : "buffer") as PublisherKind,
     // False when a stored key can no longer be decrypted, so the UI asks to reconnect.
-    postizConnected: Boolean(await getPostizKey(userId)),
+    publisherConnected: Boolean(auth),
   };
 }
 
-export async function getPostizKey(userId: string): Promise<string | null> {
+/** The creator's connected publishing service and its decrypted key, or null. */
+export async function getPublisher(userId: string): Promise<PublisherAuth | null> {
   const s = await getSettings(userId);
-  if (!s.postizKeyEnc) return null;
+  if (!s.publisherKeyEnc || !isPublisher(s.publisher)) return null;
   try {
-    return decrypt(s.postizKeyEnc, userId);
+    return { kind: s.publisher, key: decrypt(s.publisherKeyEnc, userId) };
   } catch {
     return null;
   }
@@ -40,9 +43,9 @@ export async function getPostizKey(userId: string): Promise<string | null> {
 
 export async function updateSettings(
   user: CurrentUser,
-  patch: { brandName?: string; brandVoice?: string; autopilot?: boolean; autoApprove?: boolean; postizKey?: string | null },
+  patch: { brandName?: string; brandVoice?: string; autopilot?: boolean; autoApprove?: boolean; publisher?: PublisherKind; publisherKey?: string | null },
 ) {
-  await getSettings(user.id);
+  const current = await getSettings(user.id);
   const plan = getPlan(user.plan);
   const set: Partial<typeof schema.settings.$inferInsert> = {};
   if (patch.brandName !== undefined) set.brandName = patch.brandName;
@@ -55,13 +58,19 @@ export async function updateSettings(
     if (patch.autoApprove && plan.id !== "business") throw limitReached("Auto-approve is available on Business.");
     set.autoApprove = patch.autoApprove;
   }
-  if (patch.postizKey !== undefined) {
-    if (patch.postizKey === null || patch.postizKey === "") set.postizKeyEnc = null;
+  if (patch.publisherKey !== undefined) {
+    if (patch.publisherKey === null || patch.publisherKey === "") set.publisherKeyEnc = null;
     else {
+      const kind = patch.publisher ?? (isPublisher(current.publisher) ? current.publisher : "buffer");
       // Verify the key works before storing it.
-      await listChannels(patch.postizKey);
-      set.postizKeyEnc = encrypt(patch.postizKey, user.id);
+      await listChannels({ kind, key: patch.publisherKey });
+      set.publisher = kind;
+      set.publisherKeyEnc = encrypt(patch.publisherKey, user.id);
     }
+  } else if (patch.publisher !== undefined && patch.publisher !== current.publisher) {
+    // A key belongs to one service, so switching service disconnects the old key.
+    set.publisher = patch.publisher;
+    set.publisherKeyEnc = null;
   }
   if (Object.keys(set).length === 0) throw badRequest("Nothing to update.");
   await db.update(schema.settings).set(set).where(eq(schema.settings.userId, user.id));

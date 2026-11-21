@@ -126,7 +126,7 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
   );
 }
 
-export function CampaignBoard({ campaign, initialPosts, postizConnected }: { campaign: BoardCampaign; initialPosts: BoardPost[]; postizConnected: boolean }) {
+export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { campaign: BoardCampaign; initialPosts: BoardPost[]; publisherConnected: boolean }) {
   const router = useRouter();
   const [c, setC] = useState(campaign);
   const [posts, setPosts] = useState(initialPosts);
@@ -242,7 +242,7 @@ export function CampaignBoard({ campaign, initialPosts, postizConnected }: { cam
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-3xl">Posts</h2>
-          {!postizConnected ? <p className="text-sm text-muted">Postiz is not connected. Copy posts by hand, or connect it in Settings to publish from here.</p> : null}
+          {!publisherConnected ? <p className="text-sm text-muted">No publishing service is connected. Copy posts by hand, or connect Buffer (free) in Settings to publish from here.</p> : null}
         </div>
         <Button
           loading={busy === "posts"}

@@ -15,7 +15,7 @@ const AGENTS = [
   { id: "product-writer", icon: PenLine, name: "Product writer", when: "On demand, per product", does: "Plans the outline and writes every page." },
   { id: "ad-planner", icon: Megaphone, name: "Ad planner", when: "When a campaign is created or replanned", does: "Splits the budget across channels and sets angles." },
   { id: "daily-poster", icon: CalendarClock, name: "Daily poster", when: "Every morning with autopilot, or on demand", does: "Writes the day's posts for each active campaign." },
-  { id: "publisher", icon: Send, name: "Publisher", when: "After approval, or automatically", does: "Schedules posts to your accounts through Postiz." },
+  { id: "publisher", icon: Send, name: "Publisher", when: "After approval, or automatically", does: "Schedules posts to your accounts through Buffer or Postiz." },
 ];
 
 export default async function Agents() {
@@ -42,7 +42,7 @@ export default async function Agents() {
               description="Skip the review step: autopilot publishes new posts without waiting for you."
               locked={plan.id === "business" ? undefined : "Available on Business."}
             />
-            {!settings.postizConnected ? <p className="rounded-xl bg-gold-soft px-3.5 py-2.5 text-sm text-gold">Connect Postiz in Settings so the publisher can reach your social accounts.</p> : null}
+            {!settings.publisherConnected ? <p className="rounded-xl bg-gold-soft px-3.5 py-2.5 text-sm text-gold">Connect Buffer (free) in Settings so the publisher can reach your social accounts.</p> : null}
           </Card>
           <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
             {AGENTS.map((a) => (

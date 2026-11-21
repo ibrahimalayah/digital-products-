@@ -4,11 +4,20 @@ An AI studio for digital products, with a public store and a creator SaaS in one
 
 1. **Idea lab** – give the idea scout a niche; it proposes specific printable products (promise, buyer, contents, suggested price).
 2. **Product studio** – the product writer plans an outline and writes every page (steps, checklists, templates, fill-ins, tips). Export a print-ready PDF in US Letter or A4.
-3. **Campaigns** – set a monthly budget, pick channels, and the ad planner splits the budget and chooses angles. The daily poster writes posts; the publisher schedules them through [Postiz](https://postiz.com).
+3. **Campaigns** – set a monthly budget, pick channels, and the ad planner splits the budget and chooses angles. The daily poster writes posts; the publisher schedules them through [Buffer](https://buffer.com) (free for up to 3 channels) or [Postiz](https://postiz.com).
 4. **Autopilot** – a daily cron writes and (optionally) publishes posts for every active campaign.
 5. **Store** – the platform owner publishes products; buyers pay with Stripe Checkout and download from their library.
 6. **Plans** – Starter (free), Pro and Business subscriptions gate quotas, campaign budgets and autopilot.
 7. **Control panel** (`/admin`) – revenue, users, orders, products, integration status, manual autopilot run.
+
+## Publishing
+
+Each creator connects their own publishing service under Settings → Publishing:
+
+- **Buffer** (default, free plan works): create a key at `publish.buffer.com/settings/api`. Text posts go to X, LinkedIn, Facebook, Threads, Bluesky, Mastodon and Google Business. Networks that need an image or extra details (Instagram, TikTok, Pinterest, YouTube) are not offered.
+- **Postiz**: paste the public API key from Settings → Developers.
+
+Keys are encrypted per user. Without a service, posts can be copied by hand.
 
 ## Starter product
 
@@ -42,7 +51,7 @@ With no `DATABASE_URL`, development uses an embedded Postgres stored in `.data/`
 ## Tests
 
 ```bash
-npm test             # 70 unit and integration tests against an in-memory Postgres
+npm test             # 77 unit and integration tests against an in-memory Postgres
 npm run test:e2e     # 6 browser journeys against a production build
 npm run typecheck && npm run lint
 ```

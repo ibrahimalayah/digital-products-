@@ -30,7 +30,7 @@ export default async function CampaignDetail({ params }: { params: Promise<{ id:
       </Link>
       <PageHeader eyebrow={`Campaign for ${row.productTitle}`} title={c.name} />
       <CampaignBoard
-        postizConnected={settings.postizConnected}
+        publisherConnected={settings.publisherConnected}
         campaign={{ id: c.id, name: c.name, status: c.status, objective: c.objective, monthlyBudgetCents: c.monthlyBudgetCents, postsPerDay: c.postsPerDay, plan: c.plan }}
         initialPosts={posts.map((p) => ({
           id: p.id,

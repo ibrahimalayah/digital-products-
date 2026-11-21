@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEq
 import { authSecret } from "./env";
 import { notConfigured } from "./errors";
 
-// AES-256-GCM for secrets stored at rest (creator Postiz API keys).
+// AES-256-GCM for secrets stored at rest (creators' publishing-service API keys).
 // Production requires its own ENCRYPTION_KEY so that rotating the session
 // secret never makes stored keys unreadable. Development falls back.
 function key() {

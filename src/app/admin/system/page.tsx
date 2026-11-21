@@ -16,7 +16,7 @@ export default function AdminSystem() {
     { name: "Stripe payments", ok: integrations.stripe(), fix: "Run `vercel integration add stripe`.", note: "Store checkout and plan subscriptions." },
     { name: "Stripe webhook", ok: integrations.stripeWebhook(), fix: "Add a webhook to /api/stripe/webhook and set STRIPE_WEBHOOK_SECRET.", note: "Confirms orders and plan changes." },
     { name: "Cron secret", ok: integrations.cron(), fix: "Set CRON_SECRET to a long random value.", note: "Protects the daily autopilot endpoint." },
-    { name: "Encryption key", ok: integrations.encryption(), fix: "Set ENCRYPTION_KEY to a long random value.", note: "Encrypts creators' Postiz keys. Falls back to the auth secret." },
+    { name: "Encryption key", ok: integrations.encryption(), fix: "Set ENCRYPTION_KEY to a long random value.", note: "Encrypts creators' Buffer and Postiz keys." },
   ];
   return (
     <>

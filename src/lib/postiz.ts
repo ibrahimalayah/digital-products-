@@ -2,7 +2,7 @@ import { AppError } from "./errors";
 
 const BASE = (process.env.POSTIZ_API_URL || "https://api.postiz.com").replace(/\/$/, "");
 
-export type PostizChannel = { id: string; name: string; identifier: string; disabled?: boolean };
+import type { PublisherChannel, ScheduleInput } from "./publishers";
 
 async function call<T>(apiKey: string, path: string, init?: RequestInit): Promise<T> {
   let res: Response;
@@ -26,7 +26,7 @@ async function call<T>(apiKey: string, path: string, init?: RequestInit): Promis
   return (await res.json()) as T;
 }
 
-export async function listChannels(apiKey: string): Promise<PostizChannel[]> {
+export async function listChannels(apiKey: string): Promise<PublisherChannel[]> {
   const raw = await call<unknown>(apiKey, "/integrations");
   const list = Array.isArray(raw) ? raw : [];
   return list
@@ -42,7 +42,7 @@ export async function listChannels(apiKey: string): Promise<PostizChannel[]> {
 
 export async function schedulePost(
   apiKey: string,
-  input: { integrationId: string; identifier: string; content: string; date: Date },
+  input: ScheduleInput,
 ): Promise<{ id: string | null }> {
   const now = Date.now();
   const type = input.date.getTime() <= now + 60_000 ? "now" : "schedule";

@@ -222,6 +222,8 @@ const postsSchema = z.object({
 
 export const CHANNEL_LIMITS: Record<string, number> = {
   x: 280,
+  twitter: 280,
+  googlebusiness: 1500,
   threads: 500,
   bluesky: 300,
   mastodon: 500,

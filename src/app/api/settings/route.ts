@@ -10,7 +10,8 @@ const patch = z
     brandVoice: z.string().trim().max(600),
     autopilot: z.boolean(),
     autoApprove: z.boolean(),
-    postizKey: z.string().trim().min(8).max(300).nullable(),
+    publisher: z.enum(["buffer", "postiz"]),
+    publisherKey: z.string().trim().min(8).max(400).nullable(),
   })
   .partial()
   .strict();

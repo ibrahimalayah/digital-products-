@@ -15,6 +15,13 @@
       "when": 1795282774543,
       "tag": "0001_black_vivisector",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795286297219,
+      "tag": "0002_cooing_lord_hawal",
+      "breakpoints": true
     }
   ]
 }

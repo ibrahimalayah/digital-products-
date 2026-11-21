@@ -102,8 +102,11 @@ export const settings = pgTable("settings", {
     .references(() => user.id, { onDelete: "cascade" }),
   brandName: text("brand_name").default("").notNull(),
   brandVoice: text("brand_voice").default("").notNull(),
-  // AES-256-GCM ciphertext of the creator's Postiz API key. Never returned to the client.
-  postizKeyEnc: text("postiz_key_enc"),
+  // Which publishing service the creator connected: "buffer" | "postiz".
+  publisher: text("publisher").default("buffer").notNull(),
+  // AES-256-GCM ciphertext of that service's API key. Never returned to the client.
+  // (The column keeps its original name.)
+  publisherKeyEnc: text("postiz_key_enc"),
   autopilot: boolean("autopilot").default(false).notNull(),
   autoApprove: boolean("auto_approve").default(false).notNull(),
   updatedAt: timestamp("updated_at")
@@ -231,7 +234,7 @@ export const posts = pgTable(
     angle: text("angle").default("").notNull(),
     content: text("content").notNull(),
     scheduledAt: timestamp("scheduled_at").notNull(),
-    // draft → approved → scheduled (sent to Postiz) | failed
+    // draft → approved → scheduled (handed to the publishing service) | failed
     status: text("status").default("draft").notNull(),
     externalId: text("external_id"),
     error: text("error"),

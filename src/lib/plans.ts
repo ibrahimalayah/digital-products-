@@ -45,7 +45,7 @@ export const PLANS: Record<PlanId, Plan> = {
       monthlyAdBudgetCents: 500_00,
       autopilot: true,
     },
-    features: ["40 idea research runs a month", "15 full products a month", "5 campaigns, up to $500 planned budget", "Daily autopilot: 3 posts a day per campaign", "Auto-publish through Postiz"],
+    features: ["40 idea research runs a month", "15 full products a month", "5 campaigns, up to $500 planned budget", "Daily autopilot: 3 posts a day per campaign", "Auto-publish through Buffer or Postiz"],
   },
   business: {
     id: "business",

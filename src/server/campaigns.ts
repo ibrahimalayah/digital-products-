@@ -4,11 +4,11 @@ import { limitFor, planBudget, writePosts, type CampaignBrief } from "@/lib/ai";
 import { getPlan } from "@/lib/plans";
 import { badRequest, limitReached, notFound } from "@/lib/errors";
 import { appUrl } from "@/lib/env";
-import { schedulePost } from "@/lib/postiz";
+import { schedulePost, type PublisherAuth } from "@/lib/publishers";
 import { money } from "@/lib/format";
 import { newId } from "@/lib/utils";
 import { getOwnedProduct } from "./products";
-import { getPostizKey, getSettings } from "./settings";
+import { getPublisher, getSettings } from "./settings";
 import { logRun } from "./agents-log";
 import type { CurrentUser } from "@/lib/session";
 import type { CampaignChannel } from "@/lib/types";
@@ -216,7 +216,7 @@ async function getOwnedPost(userId: string, id: string): Promise<Post> {
 
 export async function updatePost(userId: string, id: string, patch: { content?: string; approved?: boolean }): Promise<Post> {
   const p = await getOwnedPost(userId, id);
-  if (p.status === "scheduled") throw badRequest("This post was already sent to Postiz. Edit it there.");
+  if (p.status === "scheduled") throw badRequest("This post was already sent to your publishing service. Edit it there.");
   const set: Partial<typeof schema.posts.$inferInsert> = {};
   if (patch.content !== undefined) {
     if (patch.content.length > limitFor(p.channel)) throw badRequest(`Posts on ${p.channel} can be at most ${limitFor(p.channel)} characters.`);
@@ -230,13 +230,13 @@ export async function updatePost(userId: string, id: string, patch: { content?: 
 
 /**
  * A publish attempt that never finished (the function was killed mid-call)
- * leaves a post in "sending". We cannot know whether Postiz received it, so it
+ * leaves a post in "sending". We cannot know whether the publishing service received it, so it
  * is marked failed with a note rather than resent automatically.
  */
 export async function releaseStuckPosts(now = new Date()): Promise<number> {
   const rows = await db
     .update(schema.posts)
-    .set({ status: "failed", error: "Publishing was interrupted. Check Postiz before publishing again to avoid a duplicate." })
+    .set({ status: "failed", error: "Publishing was interrupted. Check your publishing service before publishing again to avoid a duplicate." })
     .where(and(eq(schema.posts.status, "sending"), lt(schema.posts.sendingAt, new Date(now.getTime() - 15 * 60_000))))
     .returning({ id: schema.posts.id });
   return rows.length;
@@ -247,15 +247,15 @@ export async function deletePost(userId: string, id: string) {
 }
 
 /**
- * Publisher agent: hands one post to Postiz. The row is claimed first with a
+ * Publisher agent: hands one post to the connected service (Buffer or Postiz). The row is claimed first with a
  * conditional update so a retry or a parallel cron run cannot double-post.
  */
-export async function publishPost(userId: string, id: string, apiKey?: string | null): Promise<Post> {
+export async function publishPost(userId: string, id: string, given?: PublisherAuth | null): Promise<Post> {
   const p = await getOwnedPost(userId, id);
   if (p.status === "scheduled") return p;
-  if (!p.integrationId) throw badRequest("This channel is not connected through Postiz. Copy the post, or connect Postiz in Settings and recreate the campaign.");
-  const key = apiKey ?? (await getPostizKey(userId));
-  if (!key) throw badRequest("Connect your Postiz API key in Settings to publish.");
+  if (!p.integrationId) throw badRequest("This channel is not connected to a publishing service. Copy the post, or connect Buffer in Settings and create a new campaign.");
+  const auth = given ?? (await getPublisher(userId));
+  if (!auth) throw badRequest("Connect Buffer in Settings to publish.");
   const claimed = await db
     .update(schema.posts)
     .set({ status: "sending", error: null, sendingAt: new Date() })
@@ -264,7 +264,7 @@ export async function publishPost(userId: string, id: string, apiKey?: string | 
   if (!claimed.length) return getOwnedPost(userId, id);
   try {
     const when = p.scheduledAt.getTime() < Date.now() ? new Date() : p.scheduledAt;
-    const res = await schedulePost(key, { integrationId: p.integrationId, identifier: p.channel, content: p.content, date: when });
+    const res = await schedulePost(auth, { integrationId: p.integrationId, identifier: p.channel, content: p.content, date: when });
     const [row] = await db.update(schema.posts).set({ status: "scheduled", externalId: res.id }).where(eq(schema.posts.id, p.id)).returning();
     return row;
   } catch (e) {

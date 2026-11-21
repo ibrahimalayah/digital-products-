@@ -20,7 +20,7 @@ const faqs = [
   { q: "What kind of products can I make?", a: "Printable PDFs: kits, template packs, planners, workbooks, checklists and trackers. The writer produces steps, tick-box lists, fill-in pages, ready-to-copy templates and tips, laid out for US Letter or A4." },
   { q: "Do I own what I generate?", a: "Yes. Download the PDF and sell it anywhere you like: your own site, Etsy, Gumroad or by email. Read and edit every product before you sell it; you are responsible for what it says." },
   { q: "How do the ad budgets work?", a: "You set a monthly budget per campaign. The ad planner splits it across your channels and the daily poster keeps them fed with organic posts. Paid spend itself is set up in each network's ads manager and billed by that network." },
-  { q: "Which social networks can it post to?", a: "Publishing runs through Postiz, which connects to X, LinkedIn, Instagram, Facebook, TikTok, Pinterest, Threads and more. Without Postiz you can still copy every post by hand." },
+  { q: "Which social networks can it post to?", a: "Publishing runs through Buffer, which is free for up to three channels and covers X, LinkedIn, Facebook, Threads, Bluesky, Mastodon and Google Business. Postiz is supported too. Without either you can still copy every post by hand." },
   { q: "Can I cancel?", a: "Any time, from the billing page. You keep your products and drop back to the free plan's limits." },
 ];
 
@@ -204,7 +204,7 @@ export default function Home() {
               <span className="font-display text-5xl opacity-25">03</span>
             </div>
             <h3 className="mt-6 text-xl font-semibold">Run ads on your budget</h3>
-            <p className="mt-2 max-w-lg text-sm leading-relaxed opacity-70">Set a monthly budget from $0 up. The planner splits it by channel, the poster writes fresh posts every day, and Postiz publishes them.</p>
+            <p className="mt-2 max-w-lg text-sm leading-relaxed opacity-70">Set a monthly budget from $0 up. The planner splits it by channel, the poster writes fresh posts every day, and Buffer publishes them.</p>
             <div className="mt-6 grid grid-cols-5 gap-2">
               {["$0", "$50", "$250", "$1k", "$5k"].map((b, i) => (
                 <div key={b} className={cn("rounded-xl border px-2 py-3 text-center", i === 2 ? "border-bg bg-bg text-ink" : "border-bg/20")}>

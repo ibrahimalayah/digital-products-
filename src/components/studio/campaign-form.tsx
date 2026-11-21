@@ -21,12 +21,14 @@ export function CampaignForm({
   defaultProduct,
   channels,
   connected,
+  publisherName,
   limits,
 }: {
   products: { id: string; title: string }[];
   defaultProduct?: string;
   channels: Channel[];
   connected: boolean;
+  publisherName: string;
   limits: { plan: string; budgetLeftCents: number; postsPerDay: number };
 }) {
   const router = useRouter();
@@ -140,7 +142,7 @@ export function CampaignForm({
         <fieldset>
           <legend className="text-[13px] font-medium">Channels</legend>
           <p className="mt-1 text-xs text-muted">
-            {connected ? "These are the accounts connected in your Postiz workspace." : "Postiz is not connected, so posts will be written for you to copy. Connect it in Settings to publish automatically."}
+            {connected ? `These are the text-post channels connected in your ${publisherName} account.` : "No publishing service is connected, so posts will be written for you to copy. Connect Buffer (free) in Settings to publish automatically."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {channels.map((c) => {

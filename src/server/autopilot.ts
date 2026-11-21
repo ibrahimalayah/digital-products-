@@ -2,7 +2,8 @@ import { and, eq, gte, inArray, lt } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getPlan } from "@/lib/plans";
 import { generateDayPosts, publishPost, releaseStuckPosts } from "./campaigns";
-import { getPostizKey } from "./settings";
+import { getPublisher } from "./settings";
+import { PUBLISHERS } from "@/lib/publishers";
 import { logRun } from "./agents-log";
 
 export type AutopilotReport = { users: number; campaigns: number; written: number; published: number; failed: number };
@@ -31,7 +32,7 @@ export async function runAutopilot(now = new Date()): Promise<AutopilotReport> {
       .from(schema.campaigns)
       .where(and(eq(schema.campaigns.userId, user.id), eq(schema.campaigns.status, "active")))
       .limit(plan.limits.campaigns);
-    const key = await getPostizKey(user.id);
+    const auth = await getPublisher(user.id);
     const autoApprove = settings.autoApprove && plan.id === "business";
 
     for (const c of active) {
@@ -46,7 +47,7 @@ export async function runAutopilot(now = new Date()): Promise<AutopilotReport> {
           await logRun(user.id, "daily-poster", "error", `Could not write posts for "${c.name.slice(0, 60)}".`);
         }
       }
-      if (!key) continue;
+      if (!auth) continue;
       const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       const due = await db
         .select({ id: schema.posts.id })
@@ -62,7 +63,7 @@ export async function runAutopilot(now = new Date()): Promise<AutopilotReport> {
       let sent = 0;
       for (const p of due) {
         try {
-          const out = await publishPost(user.id, p.id, key);
+          const out = await publishPost(user.id, p.id, auth);
           if (out.status === "scheduled") sent++;
         } catch {
           report.failed++;
@@ -70,7 +71,7 @@ export async function runAutopilot(now = new Date()): Promise<AutopilotReport> {
       }
       if (sent) {
         report.published += sent;
-        await logRun(user.id, "publisher", "ok", `Scheduled ${sent} post${sent === 1 ? "" : "s"} to Postiz for "${c.name.slice(0, 60)}".`);
+        await logRun(user.id, "publisher", "ok", `Scheduled ${sent} post${sent === 1 ? "" : "s"} to ${PUBLISHERS[auth.kind].name} for "${c.name.slice(0, 60)}".`);
       }
     }
   }

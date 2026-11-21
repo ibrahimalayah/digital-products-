@@ -47,7 +47,7 @@ export default async function Overview() {
     { done: ideas > 0, label: "Research your first idea", href: "/app/ideas" },
     { done: products > 0, label: "Create a product", href: ideas > 0 ? "/app/ideas" : "/app/products/new" },
     { done: campaigns > 0, label: "Plan a campaign", href: "/app/campaigns/new" },
-    { done: settings.postizConnected, label: "Connect Postiz to publish", href: "/app/settings" },
+    { done: settings.publisherConnected, label: "Connect Buffer to publish", href: "/app/settings" },
   ];
   const doneCount = steps.filter((s) => s.done).length;
 
