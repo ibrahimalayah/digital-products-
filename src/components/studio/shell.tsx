@@ -43,12 +43,14 @@ export function Shell({ user, children }: { user: { name: string; email: string;
             <Logo />
           </Link>
           <div className="flex items-center gap-1">
-            <LanguagePicker compact value={lang} label={t("Language")} />
             <ThemeToggle />
             <Link href="/store" className="grid size-9 place-items-center rounded-full text-muted hover:bg-sunken hover:text-ink" aria-label={t("Open the store")} title={t("Open the store")}>
               <Store className="size-[18px]" />
             </Link>
           </div>
+        </div>
+        <div className="px-3 pb-3">
+          <LanguagePicker full value={lang} label={t("Language")} className="flex w-full" />
         </div>
         <nav aria-label={t("Studio")} className="flex gap-1 overflow-x-auto border-b border-line px-3 pb-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:border-0 lg:pb-0">
           {items.map((it) => (

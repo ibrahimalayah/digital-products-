@@ -10,7 +10,7 @@ import { cn } from "@/lib/cn";
  * for a year and, when they are signed in, also becomes the language their
  * agents write in.
  */
-export function LanguagePicker({ value, label, className, compact }: { value: LanguageId; label: string; className?: string; compact?: boolean }) {
+export function LanguagePicker({ value, label, className, full }: { value: LanguageId; label: string; className?: string; full?: boolean }) {
   const router = useRouter();
 
   async function choose(id: string) {
@@ -29,7 +29,7 @@ export function LanguagePicker({ value, label, className, compact }: { value: La
         value={value}
         onChange={(e) => choose(e.target.value)}
         // On a phone only the globe shows; the list still opens with full names.
-        className={cn("h-9 cursor-pointer appearance-none rounded-full border border-transparent bg-transparent ps-8 pe-2 text-sm hover:border-line focus:border-ink focus:outline-none max-sm:w-8 max-sm:pe-0 max-sm:text-transparent", compact && "w-8 pe-0 text-transparent")}
+        className={cn("h-9 cursor-pointer appearance-none rounded-full border border-transparent bg-transparent ps-8 pe-2 text-sm hover:border-line focus:border-ink focus:outline-none max-sm:w-8 max-sm:pe-0 max-sm:text-transparent", full && "w-full border-line bg-surface text-ink max-sm:w-full max-sm:pe-2 max-sm:text-ink")}
       >
         {LANGUAGES.map((l) => (
           <option key={l.id} value={l.id}>
