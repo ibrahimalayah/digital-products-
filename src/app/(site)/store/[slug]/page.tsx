@@ -16,6 +16,7 @@ import { getSettings } from "@/server/settings";
 import Link from "next/link";
 import { AButton, LinkButton } from "@/components/ui";
 import { money } from "@/lib/format";
+import { getI18n, getT } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,10 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   await dbReady();
   const p = await getStoreProduct((await params).slug);
-  if (!p) return { title: "Not found" };
+  if (!p) {
+    const t = await getT();
+    return { title: t("Not found") };
+  }
   const tags = productTags(p);
   return {
     title: p.title,
@@ -40,6 +44,7 @@ export default async function ProductPage({ params }: Props) {
   await dbReady();
   const p = await getStoreProduct((await params).slug);
   if (!p) notFound();
+  const { t, lang } = await getI18n();
   const user = await getUser();
   let owned = false;
   if (user) {
@@ -52,7 +57,9 @@ export default async function ProductPage({ params }: Props) {
   }
   const pages = p.sections.filter(Boolean).reduce((n, s) => n + s.pages.length, 0);
   const sample = p.sections.filter(Boolean)[0]?.pages[0];
+  // The product's own text follows the product's language; interface text follows the visitor's.
   const dir = isRtl(p.language) ? "rtl" : undefined;
+  const uiDir = isRtl(lang) ? "rtl" : "ltr";
   const tags = productTags(p);
   const brand = (await getSettings(p.userId)).brandName || "Kitforge";
   const storeOpen = integrations.stripe();
@@ -67,42 +74,42 @@ export default async function ProductPage({ params }: Props) {
         <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">{p.format}</p>
         <h1 className="font-display text-5xl leading-none tracking-tight sm:text-6xl">{p.title}</h1>
         <p className="mt-5 text-xl leading-relaxed">{p.promise}</p>
-        <p className="mt-3 text-muted">For: {p.audience}</p>
+        <p className="mt-3 text-muted">{t("For: {audience}", { audience: p.audience })}</p>
 
         <div className="mt-8 rounded-2xl border border-line bg-surface p-6">
           <div className="flex items-baseline justify-between">
             <p className="font-display text-5xl">{money(p.priceCents)}</p>
-            <p className="text-sm text-muted">
-              {pages} pages · {p.pageSize === "A4" ? "A4" : "US Letter"} PDF
-            </p>
+            <p className="text-sm text-muted">{t("{n} pages · {size} PDF", { n: pages, size: p.pageSize === "A4" ? "A4" : t("US Letter") })}</p>
           </div>
           <div className="mt-5">
             {owned ? (
               <AButton href={`/api/products/${p.id}/pdf`} size="lg" className="w-full">
-                <Download className="size-4" aria-hidden /> Download your PDF
+                <Download className="size-4" aria-hidden /> {t("Download your PDF")}
               </AButton>
             ) : storeOpen ? (
-              <BuyButton slug={p.slug} label={`Buy for ${money(p.priceCents)}`} signedIn={Boolean(user)} />
+              <BuyButton slug={p.slug} label={t("Buy for {price}", { price: money(p.priceCents) })} signedIn={Boolean(user)} />
             ) : (
               <LinkButton href={`/app/ideas?niche=${encodeURIComponent(p.title)}`} size="lg" className="w-full">
-                Make one like this
+                {t("Make one like this")}
               </LinkButton>
             )}
           </div>
-          <p className="mt-3 text-center text-xs text-muted" dir="ltr">
-            {storeOpen ? "Secure checkout by Stripe. Instant download after payment." : "This is an example made in the studio. Checkout is not open yet; read the free preview below or make your own."}
+          <p className="mt-3 text-center text-xs text-muted" dir={uiDir}>
+            {storeOpen
+              ? t("Secure checkout by Stripe. Instant download after payment.")
+              : t("This is an example made in the studio. Checkout is not open yet; read the free preview below or make your own.")}
           </p>
-          <ul className="mt-4 flex flex-wrap justify-center gap-1.5" aria-label="Tags" dir="ltr">
-            {tags.map((t) => (
-              <li key={t} className="rounded-full bg-sunken px-2.5 py-1 font-mono text-[11px] text-muted">
-                #{t}
+          <ul className="mt-4 flex flex-wrap justify-center gap-1.5" aria-label={t("Tags")} dir="ltr">
+            {tags.map((tag) => (
+              <li key={tag} className="rounded-full bg-sunken px-2.5 py-1 font-mono text-[11px] text-muted">
+                #{tag}
               </li>
             ))}
           </ul>
           {storeOpen && !owned ? (
-            <p className="mt-3 text-center text-xs" dir="ltr">
+            <p className="mt-3 text-center text-xs" dir={uiDir}>
               <Link href={`/app/ideas?niche=${encodeURIComponent(p.title)}`} className="text-muted underline hover:text-ink">
-                Make one like this in the studio
+                {t("Make one like this in the studio")}
               </Link>
             </p>
           ) : null}
@@ -115,12 +122,12 @@ export default async function ProductPage({ params }: Props) {
         )}
 
         {sample ? (
-          <section className="mt-12" aria-label="Free preview">
-            <h2 className="font-display text-3xl" dir="ltr">
-              Free preview
+          <section className="mt-12" aria-label={t("Free preview")}>
+            <h2 className="font-display text-3xl" dir={uiDir}>
+              {t("Free preview")}
             </h2>
-            <p className="mt-1 text-sm text-muted" dir="ltr">
-              The first page, exactly as it prints.
+            <p className="mt-1 text-sm text-muted" dir={uiDir}>
+              {t("The first page, exactly as it prints.")}
             </p>
             <div className="mt-5 rounded-2xl border border-line bg-surface p-6 sm:p-8">
               <h3 className="font-display text-2xl">{sample.heading}</h3>
@@ -128,7 +135,7 @@ export default async function ProductPage({ params }: Props) {
               <div className="mt-4 space-y-4 text-sm leading-relaxed">
                 {sample.blocks.slice(0, 3).map((b, i) =>
                   b.type === "drawing" ? (
-                    <Drawing key={i} kind={b.text} seed={b.title} className="w-full max-w-[280px] rounded-lg border border-line" />
+                    <Drawing key={i} kind={b.text} seed={b.title} t={t} className="w-full max-w-[280px] rounded-lg border border-line" />
                   ) : (
                     <div key={i}>
                       {b.title ? <p className="font-semibold">{b.title}</p> : null}
@@ -145,20 +152,20 @@ export default async function ProductPage({ params }: Props) {
                 )}
               </div>
               {pages > 1 ? (
-                <p className="mt-5 border-t border-line pt-4 text-sm text-muted" dir="ltr">
-                  {pages - 1} more pages in the full PDF.
+                <p className="mt-5 border-t border-line pt-4 text-sm text-muted" dir={uiDir}>
+                  {t("{n} more pages in the full PDF.", { n: pages - 1 })}
                 </p>
               ) : null}
             </div>
           </section>
         ) : null}
 
-        <h2 className="mt-12 font-display text-3xl">What&apos;s inside</h2>
+        <h2 className="mt-12 font-display text-3xl">{t("What's inside")}</h2>
         <ol className="mt-5 space-y-5">
           {p.sections.filter(Boolean).map((s, i) => (
             <li key={i} className="rounded-2xl border border-line p-5">
               <p className="font-medium">
-                <span className="mr-2 font-mono text-sm text-accent">{String(i + 1).padStart(2, "0")}</span>
+                <span className="me-2 font-mono text-sm text-accent">{String(i + 1).padStart(2, "0")}</span>
                 {s.title}
               </p>
               <p className="mt-1 text-sm text-muted">{s.summary}</p>
@@ -173,7 +180,7 @@ export default async function ProductPage({ params }: Props) {
             </li>
           ))}
         </ol>
-        {p.outline?.extras.length ? <p className="mt-5 text-sm text-muted">Plus: {p.outline.extras.join(", ")}.</p> : null}
+        {p.outline?.extras.length ? <p className="mt-5 text-sm text-muted">{t("Plus: {extras}.", { extras: p.outline.extras.join(", ") })}</p> : null}
       </div>
     </div>
   );

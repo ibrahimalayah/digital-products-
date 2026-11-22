@@ -8,22 +8,27 @@ import { Empty, LinkButton } from "@/components/ui";
 import { money } from "@/lib/format";
 import { BRAND } from "@/lib/brand.generated";
 import { cn } from "@/lib/cn";
+import { getT } from "@/lib/i18n-server";
 
-export const metadata: Metadata = {
-  title: "Store: printable digital products",
-  description: "Printable planners, kits, workbooks and kids' activity books, ready to download as PDF. Browse examples made in the Kitforge studio.",
-  alternates: { canonical: "/store" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("Store: printable digital products"),
+    description: t("Printable planners, kits, workbooks and kids' activity books, ready to download as PDF. Browse examples made in the Kitforge studio."),
+    alternates: { canonical: "/store" },
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default async function Store() {
   await dbReady();
   const items = await listStore();
+  const t = await getT();
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <div className="rise relative overflow-hidden rounded-[32px] border border-line bg-sunken">
         {BRAND.store ? (
-          <Image src={BRAND.store} alt="A row of printed kits with coloured covers" fill priority sizes="(min-width: 1152px) 1152px, 100vw" className="object-cover" />
+          <Image src={BRAND.store} alt={t("A row of printed kits with coloured covers")} fill priority sizes="(min-width: 1152px) 1152px, 100vw" className="object-cover" />
         ) : (
           <div className="absolute inset-0" aria-hidden>
             <div className="grain absolute inset-0 opacity-70" />
@@ -37,14 +42,18 @@ export default async function Store() {
           </div>
         )}
         <div className={cn("relative max-w-xl px-7 py-14 sm:px-12 sm:py-20", BRAND.store ? "bg-gradient-to-r from-bg/95 via-bg/80 to-transparent" : "")}>
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Store</p>
-          <h1 className="font-display text-5xl leading-none tracking-tight sm:text-6xl">Printable kits that get one job done.</h1>
-          <p className="mt-5 text-lg text-muted">Instant PDF download. Print at home in Letter or A4.</p>
+          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">{t("Store")}</p>
+          <h1 className="font-display text-5xl leading-none tracking-tight sm:text-6xl">{t("Printable kits that get one job done.")}</h1>
+          <p className="mt-5 text-lg text-muted">{t("Instant PDF download. Print at home in Letter or A4.")}</p>
         </div>
       </div>
       {items.length === 0 ? (
         <div className="mt-12">
-          <Empty title="The shelves are being stocked" body="New kits are on the way. Create an account and you can build your own in the studio today." action={<LinkButton href="/sign-up">Open the studio</LinkButton>} />
+          <Empty
+            title={t("The shelves are being stocked")}
+            body={t("New kits are on the way. Create an account and you can build your own in the studio today.")}
+            action={<LinkButton href="/sign-up">{t("Open the studio")}</LinkButton>}
+          />
         </div>
       ) : (
         <ul className="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">

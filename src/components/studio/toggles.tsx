@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { api, errorMessage } from "@/lib/client";
 import { Notice } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { useT } from "@/components/i18n";
 
 /** An accessible switch bound to one boolean field of /api/settings. */
 export function SettingSwitch({ field, initial, label, description, locked }: { field: "autopilot" | "autoApprove"; initial: boolean; label: string; description: string; locked?: string }) {
   const router = useRouter();
+  const t = useT();
   const [on, setOn] = useState(initial);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +22,7 @@ export function SettingSwitch({ field, initial, label, description, locked }: { 
       router.refresh();
     } catch (e) {
       setOn(!next);
-      setError(errorMessage(e));
+      setError(t(errorMessage(e)));
     }
   }
 
@@ -41,7 +43,7 @@ export function SettingSwitch({ field, initial, label, description, locked }: { 
           onClick={toggle}
           className={cn("relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40", on ? "bg-accent" : "bg-line")}
         >
-          <span className={cn("absolute top-1 size-5 rounded-full bg-surface shadow transition-[left]", on ? "left-6" : "left-1")} />
+          <span className={cn("absolute top-1 size-5 rounded-full bg-surface shadow transition-[inset-inline-start]", on ? "start-6" : "start-1")} />
         </button>
       </div>
       {error ? (

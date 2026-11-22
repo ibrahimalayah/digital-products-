@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { writeVideoScript } from "@/lib/ai";
 import { consume, refund } from "@/lib/usage";
-import { badRequest, notFound } from "@/lib/errors";
+import { badRequest, msg, notFound } from "@/lib/errors";
 import { newId } from "@/lib/utils";
 import { logRun } from "./agents-log";
 import { getOwnedProduct } from "./products";
@@ -27,7 +27,7 @@ export async function createVideo(user: CurrentUser, input: VideoInput): Promise
       seconds: input.seconds,
       brandVoice: s.brandVoice,
     });
-    if (script.scenes.length < 2) throw badRequest("The script came back empty. Try again.");
+    if (script.scenes.length < 2) throw badRequest(msg("The script came back empty. Try again."));
     const [row] = await db
       .insert(schema.videos)
       .values({ id: newId("vid"), userId: user.id, productId: p.id, title, goal: input.goal, seconds: input.seconds, voice: p.language === "en" ? input.voice : "none", script })

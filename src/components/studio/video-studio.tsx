@@ -5,6 +5,7 @@ import { Download, Play, Square, Trash2, Upload, Video as VideoIcon } from "luci
 import { api, errorMessage } from "@/lib/client";
 import { Button, Card, Field, Input, Notice, Select, Textarea, buttonClass } from "@/components/ui";
 import { VOICES } from "@/lib/voices";
+import { useT } from "@/components/i18n";
 import type { VideoScene } from "@/lib/types";
 import type { Clip } from "@/lib/voice";
 import { H, W, drawFrame, mix, play, timeline, type Frame } from "@/lib/video-render";
@@ -30,6 +31,7 @@ export function VideoStudio({
   postText: string;
 }) {
   const router = useRouter();
+  const t = useT();
   const canvas = useRef<HTMLCanvasElement>(null);
   const bar = useRef<HTMLDivElement>(null);
   const displayFont = useRef<HTMLSpanElement>(null);
@@ -106,7 +108,7 @@ export function VideoStudio({
       }
     } catch {
       URL.revokeObjectURL(url);
-      setError("That file could not be opened. Use a JPG or PNG photo, or an MP4 clip.");
+      setError(t("That file could not be opened. Use a JPG or PNG photo, or an MP4 clip."));
     }
   }
 
@@ -121,7 +123,7 @@ export function VideoStudio({
       await api(`/api/videos/${video.id}`, { method: "PATCH", body: { scenes, voice } });
       setSaved(true);
     } catch (err) {
-      setError(errorMessage(err));
+      setError(t(errorMessage(err)));
     }
   }
 
@@ -142,8 +144,8 @@ export function VideoStudio({
           const key = `${voice}|${scenes[i].narration}`;
           let clip = clips.current.get(key);
           if (!clip) {
-            setStatus(`Recording the voice: line ${i + 1} of ${scenes.length}`);
-            clip = await speak(scenes[i].narration, voice, (pct) => setStatus(`Downloading the voice model: ${pct}% (first time only, about 90 MB)`));
+            setStatus(t("Recording the voice: line {i} of {n}", { i: i + 1, n: scenes.length }));
+            clip = await speak(scenes[i].narration, voice, (pct) => setStatus(t("Downloading the voice model: {pct}% (first time only, about 90 MB)", { pct })));
             clips.current.set(key, clip);
           }
           spoken[i] = clip;
@@ -151,14 +153,14 @@ export function VideoStudio({
       }
     } catch (err) {
       console.error("[voice]", err);
-      setError('The voice could not load on this device. Try again, or choose "No voice" to make a captions-only video.');
+      setError(t('The voice could not load on this device. Try again, or choose "No voice" to make a captions-only video.'));
       setPhase("idle");
       return;
     }
     if (abort.signal.aborted) return setPhase("idle");
     const tl = timeline(scenes, spoken);
     setPhase(record ? "recording" : "preview");
-    setStatus(record ? `Recording ${Math.round(tl.total)} seconds. Keep this tab open and in front.` : "Playing the preview");
+    setStatus(record ? t("Recording {n} seconds. Keep this tab open and in front.", { n: Math.round(tl.total) }) : t("Playing the preview"));
     try {
       const out = await play(c, frame(), tl, mix(spoken, tl), {
         record,
@@ -173,14 +175,14 @@ export function VideoStudio({
       }
     } catch (err) {
       console.error("[video]", err);
-      setError("This browser could not record the video. Use a current version of Chrome, Edge or Safari.");
+      setError(t("This browser could not record the video. Use a current version of Chrome, Edge or Safari."));
     }
     if (bar.current) bar.current.style.width = "0%";
     setPhase("idle");
   }
 
   async function remove() {
-    if (!window.confirm("Delete this video script?")) return;
+    if (!window.confirm(t("Delete this video script?"))) return;
     await api(`/api/videos/${video.id}`, { method: "DELETE" }).catch(() => undefined);
     router.push("/app/videos");
     router.refresh();
@@ -193,7 +195,7 @@ export function VideoStudio({
     <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
       <div className="lg:sticky lg:top-6 lg:self-start">
         <div className="overflow-hidden rounded-2xl border border-line bg-ink">
-          <canvas ref={canvas} width={W} height={H} className="block aspect-[9/16] w-full" aria-label="Video preview" />
+          <canvas ref={canvas} width={W} height={H} className="block aspect-[9/16] w-full" aria-label={t("Video preview")} />
           <div className="h-1 bg-sunken">
             <div ref={bar} className="h-full bg-accent" style={{ width: "0%" }} />
           </div>
@@ -204,15 +206,15 @@ export function VideoStudio({
         <div className="mt-4 flex flex-wrap gap-2">
           {busy ? (
             <Button variant="secondary" onClick={() => stopper.current?.abort()}>
-              <Square className="size-4" aria-hidden /> Stop
+              <Square className="size-4" aria-hidden /> {t("Stop")}
             </Button>
           ) : (
             <>
               <Button variant="secondary" onClick={() => run(false)}>
-                <Play className="size-4" aria-hidden /> Preview
+                <Play className="size-4" aria-hidden /> {t("Preview")}
               </Button>
               <Button onClick={() => run(true)}>
-                <VideoIcon className="size-4" aria-hidden /> Create video
+                <VideoIcon className="size-4" aria-hidden /> {t("Create video")}
               </Button>
             </>
           )}
@@ -232,13 +234,13 @@ export function VideoStudio({
       <div className="space-y-6">
         {result ? (
           <Card className="p-6">
-            <h2 className="font-display text-2xl">Your video is ready</h2>
+            <h2 className="font-display text-2xl">{t("Your video is ready")}</h2>
             <p className="mt-1 text-sm text-muted">
-              {result.ext.toUpperCase()}, {result.mb} MB, 720 × 1280. It was made on this device and has not been uploaded anywhere.
+              {t("{format}, {size} MB, 720 × 1280. It was made on this device and has not been uploaded anywhere.", { format: result.ext.toUpperCase(), size: result.mb })}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <a href={result.url} download={`${fileName}.${result.ext}`} className={buttonClass("primary", "md")}>
-                <Download className="size-4" aria-hidden /> Download video
+                <Download className="size-4" aria-hidden /> {t("Download video")}
               </a>
               <Button
                 variant="secondary"
@@ -247,26 +249,26 @@ export function VideoStudio({
                   setCopied(true);
                 }}
               >
-                {copied ? "Copied" : "Copy post text"}
+                {t(copied ? "Copied" : "Copy post text")}
               </Button>
             </div>
             <p className="mt-4 whitespace-pre-wrap rounded-xl bg-sunken p-4 text-sm">{postText}</p>
             <p className="mt-3 text-xs text-muted">
-              Upload the file to TikTok, Instagram Reels or YouTube Shorts and paste the text.
-              {result.ext === "webm" ? " This browser saved WebM; for MP4, which every network accepts, use a current Chrome, Edge or Safari." : ""}
-              {product.published ? "" : " Publish the product first so the link works."}
+              {t("Upload the file to TikTok, Instagram Reels or YouTube Shorts and paste the text.")}
+              {result.ext === "webm" ? <> {t("This browser saved WebM; for MP4, which every network accepts, use a current Chrome, Edge or Safari.")}</> : null}
+              {product.published ? null : <> {t("Publish the product first so the link works.")}</>}
             </p>
           </Card>
         ) : null}
 
         <Card className="p-6">
-          <h2 className="font-display text-2xl">Presenter</h2>
+          <h2 className="font-display text-2xl">{t("Presenter")}</h2>
           <p className="mt-1 text-sm text-muted">
-            Add a photo or a short clip of the person who fronts your brand. It fills the frame behind the captions and moves gently with the voice. The file stays on this device. Use only yourself or someone who has agreed to appear.
+            {t("Add a photo or a short clip of the person who fronts your brand. It fills the frame behind the captions and moves gently with the voice. The file stays on this device. Use only yourself or someone who has agreed to appear.")}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <label className={buttonClass("secondary", "md", "cursor-pointer")}>
-              <Upload className="size-4" aria-hidden /> {presenter ? "Change" : "Choose photo or clip"}
+              <Upload className="size-4" aria-hidden /> {t(presenter ? "Change" : "Choose photo or clip")}
               <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" className="sr-only" disabled={busy} onChange={(e) => pick(e.target.files?.[0])} />
             </label>
             {presenter ? (
@@ -281,15 +283,15 @@ export function VideoStudio({
                     setPresenter(null);
                   }}
                 >
-                  Remove
+                  {t("Remove")}
                 </Button>
               </>
             ) : (
-              <span className="text-sm text-muted">No presenter: the video shows your product card.</span>
+              <span className="text-sm text-muted">{t("No presenter: the video shows your product card.")}</span>
             )}
           </div>
           <div className="mt-5 max-w-sm">
-            <Field label="Voice" htmlFor="voice" hint={english ? "Kokoro, an open-source voice that runs in your browser. Videos are marked “AI voice”." : "The built-in voice speaks English only, so this video uses captions. Record your own voice-over in your phone's editor if you want sound."}>
+            <Field label={t("Voice")} htmlFor="voice" hint={t(english ? "Kokoro, an open-source voice that runs in your browser. Videos are marked “AI voice”." : "The built-in voice speaks English only, so this video uses captions. Record your own voice-over in your phone's editor if you want sound.")}>
               <Select
                 id="voice"
                 value={english ? voice : "none"}
@@ -301,7 +303,7 @@ export function VideoStudio({
               >
                 {VOICES.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {v.label}
+                    {t(v.label)}
                   </option>
                 ))}
               </Select>
@@ -311,12 +313,12 @@ export function VideoStudio({
 
         <Card className="p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-2xl">Script</h2>
+            <h2 className="font-display text-2xl">{t("Script")}</h2>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={save} disabled={saved || busy}>
-                {saved ? "Saved" : "Save changes"}
+                {t(saved ? "Saved" : "Save changes")}
               </Button>
-              <button onClick={remove} disabled={busy} className="p-2 text-muted hover:text-danger" aria-label="Delete this video">
+              <button onClick={remove} disabled={busy} className="p-2 text-muted hover:text-danger" aria-label={t("Delete this video")}>
                 <Trash2 className="size-4" />
               </button>
             </div>
@@ -326,10 +328,10 @@ export function VideoStudio({
               <li key={i} className="grid gap-3 border-t border-line pt-4 first:border-t-0 first:pt-0 sm:grid-cols-[2rem_1fr]">
                 <span className="font-mono text-sm text-muted">{String(i + 1).padStart(2, "0")}</span>
                 <div className="space-y-3">
-                  <Field label="On screen" htmlFor={`cap-${i}`}>
+                  <Field label={t("On screen")} htmlFor={`cap-${i}`}>
                     <Input id={`cap-${i}`} value={s.caption} maxLength={80} disabled={busy} onChange={(e) => edit(i, "caption", e.target.value)} />
                   </Field>
-                  <Field label="Spoken" htmlFor={`nar-${i}`}>
+                  <Field label={t("Spoken")} htmlFor={`nar-${i}`}>
                     <Textarea id={`nar-${i}`} value={s.narration} maxLength={400} rows={2} disabled={busy} onChange={(e) => edit(i, "narration", e.target.value)} />
                   </Field>
                 </div>

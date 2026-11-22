@@ -3,6 +3,7 @@ import { toNextJsHandler } from "better-auth/next-js";
 import { getAuth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { AppError } from "@/lib/errors";
+import { getT } from "@/lib/i18n-server";
 import { dbReady } from "@/db";
 
 type Handlers = ReturnType<typeof toNextJsHandler>;
@@ -41,7 +42,10 @@ export async function POST(req: Request) {
   try {
     await guard(req);
   } catch (e) {
-    if (e instanceof AppError) return NextResponse.json({ code: e.code, message: "Too many attempts. Wait a few minutes and try again." }, { status: 429 });
+    if (e instanceof AppError) {
+      const t = await getT();
+      return NextResponse.json({ code: e.code, message: t("Too many attempts. Wait a few minutes and try again.") }, { status: 429 });
+    }
     throw e;
   }
   return get().POST(req);

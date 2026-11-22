@@ -9,8 +9,12 @@ import { getPublisher } from "@/server/settings";
 import { GENERIC_CHANNELS } from "@/server/campaigns";
 import { Empty, LinkButton, PageHeader } from "@/components/ui";
 import { CampaignForm } from "@/components/studio/campaign-form";
+import { getT } from "@/lib/i18n-server";
 
-export const metadata: Metadata = { title: "New campaign" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("New campaign") };
+}
 
 const label = (id: string) => (id === "x" ? "X" : id.charAt(0).toUpperCase() + id.slice(1));
 
@@ -18,7 +22,8 @@ export default async function NewCampaign({ searchParams }: { searchParams: Prom
   const user = await requireUserPage("/app/campaigns/new");
   const { product } = await searchParams;
   const plan = getPlan(user.plan);
-  const [products, auth, [{ used }]] = await Promise.all([
+  const [t, products, auth, [{ used }]] = await Promise.all([
+    getT(),
     listProducts(user.id),
     getPublisher(user.id),
     db
@@ -41,9 +46,9 @@ export default async function NewCampaign({ searchParams }: { searchParams: Prom
   }
   return (
     <>
-      <PageHeader eyebrow="Campaigns" title="Plan a campaign" description="Pick a product and a budget. The ad planner allocates it, and the daily poster keeps your channels fed." />
+      <PageHeader eyebrow={t("Campaigns")} title={t("Plan a campaign")} description={t("Pick a product and a budget. The ad planner allocates it, and the daily poster keeps your channels fed.")} />
       {products.length === 0 ? (
-        <Empty title="You need a product first" body="Campaigns promote a product from your line." action={<LinkButton href="/app/products/new">Create a product</LinkButton>} />
+        <Empty title={t("You need a product first")} body={t("Campaigns promote a product from your line.")} action={<LinkButton href="/app/products/new">{t("Create a product")}</LinkButton>} />
       ) : (
         <CampaignForm
           products={products.map((p) => ({ id: p.id, title: p.title }))}
@@ -51,7 +56,7 @@ export default async function NewCampaign({ searchParams }: { searchParams: Prom
           channels={channels}
           connected={connected}
           publisherName={auth ? PUBLISHERS[auth.kind].name : "Buffer"}
-          limits={{ plan: plan.name, budgetLeftCents: Math.max(0, plan.limits.monthlyAdBudgetCents - used), postsPerDay: plan.limits.postsPerDay }}
+          limits={{ plan: t(plan.name), budgetLeftCents: Math.max(0, plan.limits.monthlyAdBudgetCents - used), postsPerDay: plan.limits.postsPerDay }}
         />
       )}
     </>

@@ -1,5 +1,5 @@
 import { rateLimit } from "./rate-limit";
-import { limitReached } from "./errors";
+import { limitReached, msg, tr } from "./errors";
 import { getPlan } from "./plans";
 import { AppError } from "./errors";
 
@@ -16,7 +16,7 @@ export async function aiGuard(user: { id: string; plan: string }) {
   try {
     await rateLimit(`ai-day:${user.id}`, DAILY_AI_CALLS[plan.id], 86_400);
   } catch (e) {
-    if (e instanceof AppError && e.status === 429) throw limitReached(`You have reached today's AI limit on the ${plan.name} plan. It resets at midnight UTC.`);
+    if (e instanceof AppError && e.status === 429) throw limitReached(msg("You have reached today's AI limit on the {plan} plan. It resets at midnight UTC."), { plan: tr(plan.name) });
     throw e;
   }
 }

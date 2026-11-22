@@ -3,9 +3,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Notice } from "./ui";
 import { api, errorMessage } from "@/lib/client";
+import { useT } from "./i18n";
 
 export function BuyButton({ slug, label, signedIn }: { slug: string; label: string; signedIn: boolean }) {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +22,7 @@ export function BuyButton({ slug, label, signedIn }: { slug: string; label: stri
       const { url } = await api<{ url: string }>("/api/checkout", { body: { kind: "product", slug } });
       window.location.assign(url);
     } catch (e) {
-      setError(errorMessage(e));
+      setError(t(errorMessage(e)));
       setLoading(false);
     }
   }

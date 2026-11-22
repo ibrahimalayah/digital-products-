@@ -357,3 +357,31 @@ test("mobile layout has no horizontal scroll", async ({ browser }) => {
   await shot(page, "11-mobile.png");
   await ctx.close();
 });
+
+test("the studio is translated and its language can be changed from the dashboard", async ({ browser }) => {
+  const ctx = await browser.newContext({ locale: "sv-SE" });
+  const page = await ctx.newPage();
+  const errors = watchConsole(page);
+  await page.goto("/sign-in");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill(password);
+  await page.locator("button[type=submit]").click();
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByRole("link", { name: "Översikt" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Idélabb" })).toBeVisible();
+  await shot(page, "13-studio-sv.png");
+  await page.goto("/app/settings");
+  await expect(page.getByRole("link", { name: "Inställningar" })).toHaveAttribute("aria-current", "page");
+  // The picker in the dashboard header switches the whole studio, here to a right-to-left language.
+  await page.getByLabel("Språk").first().selectOption("ar");
+  await expect(page.getByRole("link", { name: "نظرة عامة" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await page.goto("/app/products");
+  await expect(page.getByRole("link", { name: "المنتجات", exact: true })).toHaveAttribute("aria-current", "page");
+  await shot(page, "14-studio-ar.png");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  await page.getByLabel("اللغة").first().selectOption("en");
+  await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
+  expect(errors).toEqual([]);
+  await ctx.close();
+});

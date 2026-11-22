@@ -1,13 +1,18 @@
 import { drawingKind, makeDrawing } from "@/lib/drawings";
+import { makeT, type T } from "@/lib/i18n";
 
 const FILL = { none: "none", white: "#ffffff", shade: "#e3dfd5", ink: "#1b1a17" } as const;
 const INK = "#1b1a17";
 
+// This component renders on the server and inside client components, so it cannot
+// look the language up itself: callers hand in their translator (English without one).
+const english = makeT(undefined);
+
 /** On-screen version of a printable drawing; the PDF draws the same shapes. */
-export function Drawing({ kind, seed, className }: { kind: string; seed: string; className?: string }) {
+export function Drawing({ kind, seed, className, t = english }: { kind: string; seed: string; className?: string; t?: T }) {
   const d = makeDrawing(drawingKind(kind), seed);
   return (
-    <svg viewBox={`0 0 ${d.w} ${d.h}`} className={className} role="img" aria-label={`Printable activity: ${d.kind.replace("-", " ")}`} style={{ background: "#fff" }}>
+    <svg viewBox={`0 0 ${d.w} ${d.h}`} className={className} role="img" aria-label={t("Printable activity: {kind}", { kind: d.kind.replace("-", " ") })} style={{ background: "#fff" }}>
       {d.shapes.map((sh, i) => {
         if (sh.t === "line") return <line key={i} x1={sh.a[0]} y1={sh.a[1]} x2={sh.b[0]} y2={sh.b[1]} stroke={INK} strokeWidth={sh.thin ? 0.6 : 1.6} strokeDasharray={sh.dash ? "6 4" : undefined} />;
         if (sh.t === "ellipse") return <ellipse key={i} cx={sh.c[0]} cy={sh.c[1]} rx={sh.rx} ry={sh.ry} stroke={INK} strokeWidth={1.6} fill={FILL[sh.fill ?? "white"]} />;

@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useT } from "./i18n";
 
 type Theme = "light" | "dark";
 const listeners = new Set<() => void>();
@@ -26,6 +27,8 @@ export function ThemeToggle({ className }: { className?: string }) {
   // The server cannot know the theme, so it renders the light icon and the client corrects it.
   const theme = useSyncExternalStore<Theme>(subscribe, current, () => "light");
   const next: Theme = theme === "dark" ? "light" : "dark";
+  const t = useT();
+  const label = t(next === "dark" ? "Switch to dark theme" : "Switch to light theme");
 
   function toggle() {
     document.documentElement.dataset.theme = next;
@@ -41,8 +44,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     <button
       type="button"
       onClick={toggle}
-      aria-label={`Switch to ${next} theme`}
-      title={`Switch to ${next} theme`}
+      aria-label={label}
+      title={label}
       className={cn("grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-sunken hover:text-ink", className)}
     >
       {theme === "dark" ? <Sun className="size-[18px]" aria-hidden /> : <Moon className="size-[18px]" aria-hidden />}

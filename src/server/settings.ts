@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getPlan } from "@/lib/plans";
-import { badRequest, limitReached } from "@/lib/errors";
+import { badRequest, limitReached, msg } from "@/lib/errors";
 import { isPublisher, listChannels, type PublisherAuth, type PublisherKind } from "@/lib/publishers";
 import { isLanguage, type LanguageId } from "@/lib/languages";
 import { currentLanguageOrEnglish } from "@/lib/locale-server";
@@ -56,11 +56,11 @@ export async function updateSettings(
   if (patch.brandVoice !== undefined) set.brandVoice = patch.brandVoice;
   if (patch.language !== undefined) set.language = patch.language;
   if (patch.autopilot !== undefined) {
-    if (patch.autopilot && !plan.limits.autopilot) throw limitReached("Daily autopilot is available on Pro and Business.");
+    if (patch.autopilot && !plan.limits.autopilot) throw limitReached(msg("Daily autopilot is available on Pro and Business."));
     set.autopilot = patch.autopilot;
   }
   if (patch.autoApprove !== undefined) {
-    if (patch.autoApprove && plan.id !== "business") throw limitReached("Auto-approve is available on Business.");
+    if (patch.autoApprove && plan.id !== "business") throw limitReached(msg("Auto-approve is available on Business."));
     set.autoApprove = patch.autoApprove;
   }
   if (patch.publisherKey !== undefined) {
@@ -77,7 +77,7 @@ export async function updateSettings(
     set.publisher = patch.publisher;
     set.publisherKeyEnc = null;
   }
-  if (Object.keys(set).length === 0) throw badRequest("Nothing to update.");
+  if (Object.keys(set).length === 0) throw badRequest(msg("Nothing to update."));
   await db.update(schema.settings).set(set).where(eq(schema.settings.userId, user.id));
   return publicSettings(user.id);
 }

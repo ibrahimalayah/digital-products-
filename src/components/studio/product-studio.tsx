@@ -8,6 +8,8 @@ import { ProductCover } from "@/components/product-cover";
 import type { Block, ProductOutline, ProductSection } from "@/lib/types";
 import { Drawing } from "@/components/drawing";
 import { cn } from "@/lib/cn";
+import { msg } from "@/lib/i18n";
+import { useT } from "@/components/i18n";
 
 export type StudioProduct = {
   id: string;
@@ -27,12 +29,16 @@ export type StudioProduct = {
 
 const ACCENTS = ["#17604f", "#1d3f72", "#8a2f3b", "#a0611a", "#4a3a7a", "#1b1a17"];
 
+// The status ids the server stores, as shown on the badge.
+const STATUS_LABEL: Record<string, string> = { draft: msg("draft"), generating: msg("generating"), ready: msg("ready"), published: msg("published") };
+
 function BlockPreview({ b }: { b: Block }) {
+  const t = useT();
   if (b.type === "drawing") {
     return (
       <div>
         {b.title ? <p className="text-[13px] font-semibold">{b.title}</p> : null}
-        <Drawing kind={b.text} seed={b.title} className="mt-1.5 w-full max-w-[260px] rounded-lg border border-line" />
+        <Drawing kind={b.text} seed={b.title} t={t} className="mt-1.5 w-full max-w-[260px] rounded-lg border border-line" />
       </div>
     );
   }
@@ -61,8 +67,8 @@ function BlockPreview({ b }: { b: Block }) {
   }
   if (b.type === "tip" || b.type === "stuck") {
     return (
-      <div className="rounded-lg border-l-2 border-accent bg-sunken px-3 py-2 text-sm">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">{b.type === "tip" ? "Pro tip" : "If you're stuck"}</p>
+      <div className="rounded-lg border-s-2 border-accent bg-sunken px-3 py-2 text-sm">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">{t(b.type === "tip" ? "Pro tip" : "If you're stuck")}</p>
         <p className="mt-0.5">{b.text}</p>
       </div>
     );
@@ -72,6 +78,7 @@ function BlockPreview({ b }: { b: Block }) {
 
 export function ProductStudio({ initial, isAdmin, storeReady }: { initial: StudioProduct; isAdmin: boolean; storeReady: boolean }) {
   const router = useRouter();
+  const t = useT();
   const [p, setP] = useState(initial);
   const [progress, setProgress] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -88,7 +95,7 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
     const n = cur.outline?.sections.length ?? 0;
     for (let i = 0; i < n; i++) {
       if (cur.sections[i]) continue;
-      setProgress(`Writing section ${i + 1} of ${n}: ${cur.outline!.sections[i].title}`);
+      setProgress(t("Writing section {i} of {n}: {title}", { i: i + 1, n, title: cur.outline!.sections[i].title }));
       const res = await api<{ product: StudioProduct }>(`/api/products/${cur.id}/generate`, { body: { step: "section", index: i } });
       cur = res.product;
       setP(cur);
@@ -100,14 +107,14 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
     try {
       let cur = p;
       if (fresh) {
-        setProgress("Planning the outline");
+        setProgress(t("Planning the outline"));
         cur = (await api<{ product: StudioProduct }>(`/api/products/${p.id}/generate`, { body: { step: "outline" } })).product;
         setP(cur);
       }
       await writeSections(cur);
       router.refresh();
     } catch (e) {
-      setError(errorMessage(e));
+      setError(t(errorMessage(e)));
     } finally {
       setProgress(null);
     }
@@ -123,7 +130,7 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
       setSaved(true);
       router.refresh();
     } catch (e) {
-      setError(errorMessage(e));
+      setError(t(errorMessage(e)));
     } finally {
       setSaving(false);
     }
@@ -146,22 +153,22 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
   }
 
   async function remove() {
-    if (!window.confirm("Remove this product and its campaigns? This cannot be undone.")) return;
+    if (!window.confirm(t("Remove this product and its campaigns? This cannot be undone."))) return;
     try {
       await api(`/api/products/${p.id}`, { method: "DELETE" });
       router.push("/app/products");
       router.refresh();
     } catch (e) {
-      setError(errorMessage(e));
+      setError(t(errorMessage(e)));
     }
   }
 
   const busy = progress !== null;
   const stage = p.status === "published" ? 4 : p.status === "ready" ? 3 : hasPages || busy ? 2 : p.outline ? 1 : 0;
-  const stages = ["Brief", "Outline", "Pages", "Ready", "In store"].slice(0, isAdmin ? 5 : 4);
+  const stages = [t("Brief"), t("Outline"), t("Pages"), t("Ready"), t("In store")].slice(0, isAdmin ? 5 : 4);
   return (
     <>
-    <ol className="mb-8 flex items-center gap-2 overflow-x-auto text-sm" aria-label="Progress">
+    <ol className="mb-8 flex items-center gap-2 overflow-x-auto text-sm" aria-label={t("Progress")}>
       {stages.map((name, i) => (
         <li key={name} className="flex shrink-0 items-center gap-2" aria-current={i === stage ? "step" : undefined}>
           <span className={cn("grid size-6 place-items-center rounded-full text-xs", i < stage ? "bg-accent text-on-accent" : i === stage ? "bg-ink text-bg" : "border border-line text-muted")}>
@@ -175,13 +182,13 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
     <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
       <div className="space-y-4 lg:sticky lg:top-8 lg:self-start">
         <ProductCover title={p.title} subtitle={p.outline?.subtitle || p.promise} accent={p.accent} />
-        <div className="flex items-center gap-2" role="radiogroup" aria-label="Cover colour">
+        <div className="flex items-center gap-2" role="radiogroup" aria-label={t("Cover colour")}>
           {ACCENTS.map((c) => (
             <button
               key={c}
               role="radio"
               aria-checked={p.accent === c}
-              aria-label={`Colour ${c}`}
+              aria-label={t("Colour {c}", { c })}
               onClick={() => patch({ accent: c })}
               className="grid size-7 place-items-center rounded-full border border-line"
               style={{ backgroundColor: c }}
@@ -191,35 +198,35 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <Badge tone={statusTone(p.status)}>{p.status}</Badge>
+          <Badge tone={statusTone(p.status)}>{t(STATUS_LABEL[p.status] ?? p.status)}</Badge>
           {total ? (
             <span className="font-mono text-xs text-muted">
-              {written}/{total} sections
+              {t("{written}/{total} sections", { written, total })}
             </span>
           ) : null}
         </div>
         <div className="grid gap-2">
           {hasPages ? (
             <AButton href={`/api/products/${p.id}/pdf`} variant="secondary">
-              <Download className="size-4" aria-hidden /> Download PDF
+              <Download className="size-4" aria-hidden /> {t("Download PDF")}
             </AButton>
           ) : null}
           {hasPages ? (
             <LinkButton href={`/app/campaigns/new?product=${p.id}`} variant="secondary">
-              <Megaphone className="size-4" aria-hidden /> Promote it
+              <Megaphone className="size-4" aria-hidden /> {t("Promote it")}
             </LinkButton>
           ) : null}
           {isAdmin && (p.status === "ready" || p.status === "published") ? (
             <Button onClick={() => patch({ published: p.status !== "published" })} loading={saving} variant={p.status === "published" ? "secondary" : "primary"}>
-              {p.status === "published" ? "Remove from store" : "Publish to store"}
+              {t(p.status === "published" ? "Remove from store" : "Publish to store")}
             </Button>
           ) : null}
           {isAdmin && p.status === "published" ? (
             <LinkButton href={`/store/${p.slug}`} variant="ghost" size="sm">
-              View store page
+              {t("View store page")}
             </LinkButton>
           ) : null}
-          {isAdmin && !storeReady ? <p className="text-xs text-muted">Connect Stripe before buyers can check out.</p> : null}
+          {isAdmin && !storeReady ? <p className="text-xs text-muted">{t("Connect Stripe before buyers can check out.")}</p> : null}
         </div>
       </div>
 
@@ -229,20 +236,20 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
         <Card className="p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-display text-2xl">Pages</h2>
+              <h2 className="font-display text-2xl">{t("Pages")}</h2>
               <p className="mt-1 text-sm text-muted">
-                {hasPages ? "Review what the writer produced. Regenerating uses one product credit." : "The writer plans an outline, then writes each section in full. About two minutes."}
+                {t(hasPages ? "Review what the writer produced. Regenerating uses one product credit." : "The writer plans an outline, then writes each section in full. About two minutes.")}
               </p>
             </div>
             <div className="flex gap-2">
               {incomplete && !busy ? (
                 <Button onClick={() => generate(false)} variant="secondary">
-                  Resume writing
+                  {t("Resume writing")}
                 </Button>
               ) : null}
               <Button onClick={() => generate(true)} loading={busy} disabled={p.status === "published"} variant={hasPages ? "secondary" : "primary"}>
                 {busy ? null : hasPages ? <RefreshCw className="size-4" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
-                {busy ? "Working" : hasPages ? "Regenerate" : "Generate product"}
+                {busy ? t("Working") : t(hasPages ? "Regenerate" : "Generate product")}
               </Button>
             </div>
           </div>
@@ -258,9 +265,9 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
           {p.outline ? (
             <div className="mt-6 space-y-3">
               <details className="rounded-xl border border-line p-4">
-                <summary className="cursor-pointer text-sm font-medium">Welcome page</summary>
+                <summary className="cursor-pointer text-sm font-medium">{t("Welcome page")}</summary>
                 <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{p.outline.welcome}</p>
-                <ul className="mt-3 list-decimal space-y-1 pl-5 text-sm">
+                <ul className="mt-3 list-decimal space-y-1 ps-5 text-sm">
                   {p.outline.howToUse.map((h, i) => (
                     <li key={i}>{h}</li>
                   ))}
@@ -272,17 +279,17 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
                   <details key={i} className="rounded-xl border border-line p-4" open={i === 0 && Boolean(sec)}>
                     <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium">
                       <span>
-                        <span className="mr-2 font-mono text-xs text-accent">{String(i + 1).padStart(2, "0")}</span>
+                        <span className="me-2 font-mono text-xs text-accent">{String(i + 1).padStart(2, "0")}</span>
                         {o.title}
                       </span>
-                      <span className="text-xs font-normal text-muted">{sec ? `${sec.pages.length} pages` : "Not written yet"}</span>
+                      <span className="text-xs font-normal text-muted">{sec ? t("{n} pages", { n: sec.pages.length }) : t("Not written yet")}</span>
                     </summary>
                     {sec ? (
                       <div className="mt-4 space-y-6">
                         {sec.pages.map((pg, j) => (
                           <article key={j} className="border-t border-line pt-4">
                             <h3 className="font-display text-xl">{pg.heading}</h3>
-                            <p className="text-sm text-muted">Goal: {pg.goal}</p>
+                            <p className="text-sm text-muted">{t("Goal: {goal}", { goal: pg.goal })}</p>
                             <div className="mt-3 space-y-3">
                               {pg.blocks.map((b, k) => (
                                 <BlockPreview key={k} b={b} />
@@ -297,53 +304,53 @@ export function ProductStudio({ initial, isAdmin, storeReady }: { initial: Studi
                   </details>
                 );
               })}
-              {p.outline.extras.length ? <p className="text-sm text-muted">Extras at the back: {p.outline.extras.join(", ")}.</p> : null}
+              {p.outline.extras.length ? <p className="text-sm text-muted">{t("Extras at the back: {list}.", { list: p.outline.extras.join(", ") })}</p> : null}
             </div>
           ) : null}
         </Card>
 
         <Card className="p-6">
-          <h2 className="font-display text-2xl">Brief</h2>
+          <h2 className="font-display text-2xl">{t("Brief")}</h2>
           <form onSubmit={save} className="mt-5 space-y-4">
-            <Field label="Product name" htmlFor="title">
+            <Field label={t("Product name")} htmlFor="title">
               <Input id="title" name="title" defaultValue={p.title} required minLength={3} maxLength={140} />
             </Field>
-            <Field label="Promise" htmlFor="promise">
+            <Field label={t("Promise")} htmlFor="promise">
               <Textarea id="promise" name="promise" defaultValue={p.promise} required minLength={10} maxLength={400} rows={2} />
             </Field>
-            <Field label="Who it is for" htmlFor="audience">
+            <Field label={t("Who it is for")} htmlFor="audience">
               <Input id="audience" name="audience" defaultValue={p.audience} required maxLength={400} />
             </Field>
-            <Field label="What is inside" htmlFor="format">
+            <Field label={t("What is inside")} htmlFor="format">
               <Input id="format" name="format" defaultValue={p.format} required maxLength={400} />
             </Field>
-            <Field label="Tone" htmlFor="tone">
+            <Field label={t("Tone")} htmlFor="tone">
               <Input id="tone" name="tone" defaultValue={p.tone} required maxLength={200} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Page size" htmlFor="pageSize">
+              <Field label={t("Page size")} htmlFor="pageSize">
                 <Select id="pageSize" name="pageSize" defaultValue={p.pageSize}>
-                  <option value="LETTER">US Letter</option>
+                  <option value="LETTER">{t("US Letter")}</option>
                   <option value="A4">A4</option>
                 </Select>
               </Field>
-              <Field label="Price (USD)" htmlFor="price">
+              <Field label={t("Price (USD)")} htmlFor="price">
                 <Input id="price" name="price" type="number" min={0} max={999} step="1" defaultValue={p.priceCents / 100} required />
               </Field>
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Button type="submit" variant="secondary" loading={saving}>
-                  Save brief
+                  {t("Save brief")}
                 </Button>
                 {saved ? (
                   <span className="text-sm text-accent" role="status">
-                    Saved
+                    {t("Saved")}
                   </span>
                 ) : null}
               </div>
               <Button type="button" variant="ghost" size="sm" onClick={remove} className="text-danger">
-                <Trash2 className="size-4" aria-hidden /> Remove
+                <Trash2 className="size-4" aria-hidden /> {t("Remove")}
               </Button>
             </div>
           </form>

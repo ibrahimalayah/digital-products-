@@ -2,7 +2,7 @@ import { and, desc, eq, gte, lt, ne, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { limitFor, planBudget, writePosts, type CampaignBrief } from "@/lib/ai";
 import { getPlan } from "@/lib/plans";
-import { badRequest, limitReached, notFound } from "@/lib/errors";
+import { badRequest, limitReached, msg, notFound, tr } from "@/lib/errors";
 import { appUrl } from "@/lib/env";
 import { schedulePost, type PublisherAuth } from "@/lib/publishers";
 import { money } from "@/lib/format";
@@ -36,21 +36,33 @@ async function assertWithinPlan(user: Actor, next: { monthlyBudgetCents: number;
     .from(schema.campaigns)
     .where(and(eq(schema.campaigns.userId, user.id), excludeId ? ne(schema.campaigns.id, excludeId) : undefined));
   if (!excludeId && others.length >= plan.limits.campaigns) {
-    throw limitReached(`The ${plan.name} plan includes ${plan.limits.campaigns} campaign${plan.limits.campaigns === 1 ? "" : "s"}. Upgrade to add more.`);
+    throw limitReached(
+      plan.limits.campaigns === 1
+        ? msg("The {plan} plan includes {count} campaign. Upgrade to add more.")
+        : msg("The {plan} plan includes {count} campaigns. Upgrade to add more."),
+      { plan: tr(plan.name), count: plan.limits.campaigns },
+    );
   }
   if (next.postsPerDay > plan.limits.postsPerDay) {
-    throw limitReached(`The ${plan.name} plan allows up to ${plan.limits.postsPerDay} post${plan.limits.postsPerDay === 1 ? "" : "s"} a day per campaign.`);
+    throw limitReached(
+      plan.limits.postsPerDay === 1
+        ? msg("The {plan} plan allows up to {count} post a day per campaign.")
+        : msg("The {plan} plan allows up to {count} posts a day per campaign."),
+      { plan: tr(plan.name), count: plan.limits.postsPerDay },
+    );
   }
   const total = others.reduce((s, c) => s + c.budget, 0) + next.monthlyBudgetCents;
   if (total > plan.limits.monthlyAdBudgetCents) {
-    throw limitReached(
-      `That brings your planned ad budget to ${money(total)} a month. The ${plan.name} plan covers up to ${money(plan.limits.monthlyAdBudgetCents)}.`,
-    );
+    throw limitReached(msg("That brings your planned ad budget to {total} a month. The {plan} plan covers up to {limit}."), {
+      total: money(total),
+      plan: tr(plan.name),
+      limit: money(plan.limits.monthlyAdBudgetCents),
+    });
   }
 }
 
 export async function createCampaign(user: Actor, input: CampaignInput): Promise<Campaign> {
-  if (!input.channels.length) throw badRequest("Pick at least one channel.");
+  if (!input.channels.length) throw badRequest(msg("Pick at least one channel."));
   await getOwnedProduct(user.id, input.productId);
   await assertWithinPlan(user, input);
   const [row] = await db
@@ -165,7 +177,7 @@ export async function generateDayPosts(user: Actor, id: string, day = new Date()
     .from(schema.posts)
     .where(and(eq(schema.posts.campaignId, c.id), gte(schema.posts.scheduledAt, from), lt(schema.posts.scheduledAt, to)));
   const missing = perDay - existing.length;
-  if (missing <= 0) throw limitReached(`Today's ${perDay} post${perDay === 1 ? " is" : "s are"} already written for this campaign.`);
+  if (missing <= 0) throw limitReached(perDay === 1 ? msg("Today's {count} post is already written for this campaign.") : msg("Today's {count} posts are already written for this campaign."), { count: perDay });
 
   // Rotate through the campaign's channels, continuing where earlier posts stopped.
   const slots = Array.from({ length: missing }, (_, i) => c.channels[(existing.length + i) % c.channels.length]);
@@ -194,7 +206,7 @@ export async function generateDayPosts(user: Actor, id: string, day = new Date()
       content: d.content,
       scheduledAt: times[i] ?? times[times.length - 1],
     }));
-  if (!rows.length) throw badRequest("No posts were written. Try again.");
+  if (!rows.length) throw badRequest(msg("No posts were written. Try again."));
   const inserted = await db.insert(schema.posts).values(rows).returning();
   await logRun(user.id, "daily-poster", "ok", `Wrote ${inserted.length} post${inserted.length === 1 ? "" : "s"} for "${c.name.slice(0, 60)}".`);
   return inserted;
@@ -217,10 +229,10 @@ async function getOwnedPost(userId: string, id: string): Promise<Post> {
 
 export async function updatePost(userId: string, id: string, patch: { content?: string; approved?: boolean }): Promise<Post> {
   const p = await getOwnedPost(userId, id);
-  if (p.status === "scheduled") throw badRequest("This post was already sent to your publishing service. Edit it there.");
+  if (p.status === "scheduled") throw badRequest(msg("This post was already sent to your publishing service. Edit it there."));
   const set: Partial<typeof schema.posts.$inferInsert> = {};
   if (patch.content !== undefined) {
-    if (patch.content.length > limitFor(p.channel)) throw badRequest(`Posts on ${p.channel} can be at most ${limitFor(p.channel)} characters.`);
+    if (patch.content.length > limitFor(p.channel)) throw badRequest(msg("Posts on {channel} can be at most {limit} characters."), { channel: p.channel, limit: limitFor(p.channel) });
     set.content = patch.content;
   }
   if (patch.approved !== undefined) set.status = patch.approved ? "approved" : "draft";
@@ -254,9 +266,9 @@ export async function deletePost(userId: string, id: string) {
 export async function publishPost(userId: string, id: string, given?: PublisherAuth | null): Promise<Post> {
   const p = await getOwnedPost(userId, id);
   if (p.status === "scheduled") return p;
-  if (!p.integrationId) throw badRequest("This channel is not connected to a publishing service. Copy the post, or connect Buffer in Settings and create a new campaign.");
+  if (!p.integrationId) throw badRequest(msg("This channel is not connected to a publishing service. Copy the post, or connect Buffer in Settings and create a new campaign."));
   const auth = given ?? (await getPublisher(userId));
-  if (!auth) throw badRequest("Connect Buffer in Settings to publish.");
+  if (!auth) throw badRequest(msg("Connect Buffer in Settings to publish."));
   const claimed = await db
     .update(schema.posts)
     .set({ status: "sending", error: null, sendingAt: new Date() })

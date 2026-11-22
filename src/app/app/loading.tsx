@@ -1,6 +1,10 @@
+"use client";
+import { useT } from "@/components/i18n";
+
 export default function Loading() {
+  const t = useT();
   return (
-    <div role="status" aria-label="Loading" className="space-y-8">
+    <div role="status" aria-label={t("Loading")} className="space-y-8">
       <div className="space-y-3">
         <div className="skeleton h-3 w-24" />
         <div className="skeleton h-12 w-80 max-w-full" />

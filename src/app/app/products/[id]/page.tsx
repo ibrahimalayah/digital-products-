@@ -7,18 +7,23 @@ import { requireUserPage } from "@/lib/session";
 import { integrations } from "@/lib/env";
 import { ProductStudio } from "@/components/studio/product-studio";
 import { Card, LinkButton } from "@/components/ui";
+import { getT } from "@/lib/i18n-server";
 
-export const metadata: Metadata = { title: "Product" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Product") };
+}
 
 export default async function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUserPage(`/app/products/${id}`);
   const [p] = await db.select().from(schema.products).where(and(eq(schema.products.id, id), eq(schema.products.userId, user.id))).limit(1);
   if (!p) notFound();
+  const t = await getT();
   return (
     <>
       <Link href="/app/products" className="mb-6 inline-block text-sm text-muted hover:text-ink">
-        ← Products
+        {t("← Products")}
       </Link>
       <ProductStudio
         isAdmin={user.role === "admin"}
@@ -42,13 +47,13 @@ export default async function ProductDetail({ params }: { params: Promise<{ id: 
       {p.status === "ready" || p.status === "published" ? (
         <Card className="mt-8 flex flex-wrap items-center justify-between gap-4 p-6">
           <div>
-            <h2 className="font-display text-2xl">Now bring people to it</h2>
-            <p className="mt-1 text-sm text-muted">Your product is finished. A short video and a daily posting plan are the two fastest ways to get it seen.</p>
+            <h2 className="font-display text-2xl">{t("Now bring people to it")}</h2>
+            <p className="mt-1 text-sm text-muted">{t("Your product is finished. A short video and a daily posting plan are the two fastest ways to get it seen.")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <LinkButton href={`/app/videos?product=${p.id}`}>Make a lead video</LinkButton>
+            <LinkButton href={`/app/videos?product=${p.id}`}>{t("Make a lead video")}</LinkButton>
             <LinkButton href={`/app/campaigns/new?product=${p.id}`} variant="secondary">
-              Plan a campaign
+              {t("Plan a campaign")}
             </LinkButton>
           </div>
         </Card>

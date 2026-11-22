@@ -6,22 +6,39 @@ import { api, errorMessage } from "@/lib/client";
 import { Badge, Button, Card, Notice, Textarea, statusTone } from "@/components/ui";
 import { dateTime, money } from "@/lib/format";
 import type { BudgetPlan } from "@/lib/types";
+import { msg } from "@/lib/i18n";
+import { useLang, useT } from "@/components/i18n";
 
 export type BoardCampaign = { id: string; name: string; status: string; objective: string; monthlyBudgetCents: number; postsPerDay: number; plan: BudgetPlan | null };
 export type BoardPost = { id: string; channel: string; integrationId: string | null; angle: string; content: string; scheduledAt: string; status: string; error: string | null };
 
-const dayLabel = (iso: string) => new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(iso));
+// The ids the server stores, as shown on badges and in the campaign summary.
+const STATUS_LABEL: Record<string, string> = {
+  draft: msg("draft"),
+  active: msg("active"),
+  paused: msg("paused"),
+  approved: msg("approved"),
+  scheduled: msg("scheduled"),
+  sending: msg("sending"),
+  published: msg("published"),
+  failed: msg("failed"),
+};
+const OBJECTIVE_LABEL: Record<string, string> = { sales: msg("sales"), awareness: msg("awareness"), leads: msg("leads") };
 
-function groupByDay(posts: BoardPost[]): [string, BoardPost[]][] {
+const dayLabel = (iso: string, lang: string) => new Intl.DateTimeFormat(lang === "en" ? "en-US" : lang, { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(iso));
+
+function groupByDay(posts: BoardPost[], lang: string): [string, BoardPost[]][] {
   const groups = new Map<string, BoardPost[]>();
   for (const p of posts) {
-    const key = dayLabel(p.scheduledAt);
+    const key = dayLabel(p.scheduledAt, lang);
     groups.set(key, [...(groups.get(key) ?? []), p]);
   }
   return [...groups.entries()];
 }
 
 function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: BoardPost) => void; onGone: (id: string) => void }) {
+  const t = useT();
+  const lang = useLang();
   const [text, setText] = useState(post.content);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +51,7 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
     try {
       await fn();
     } catch (e) {
-      setError(errorMessage(e));
+      setError(t(errorMessage(e)));
     } finally {
       setBusy(null);
     }
@@ -51,12 +68,12 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
           {post.angle ? <span className="text-xs text-muted">· {post.angle}</span> : null}
         </div>
         <div className="flex items-center gap-2">
-          <time className="text-xs text-muted">{dateTime(post.scheduledAt)}</time>
-          <Badge tone={statusTone(post.status)}>{post.status}</Badge>
+          <time className="text-xs text-muted">{dateTime(post.scheduledAt, lang)}</time>
+          <Badge tone={statusTone(post.status)}>{t(STATUS_LABEL[post.status] ?? post.status)}</Badge>
         </div>
       </div>
       <label className="sr-only" htmlFor={`post-${post.id}`}>
-        Post text
+        {t("Post text")}
       </label>
       <Textarea id={`post-${post.id}`} value={text} onChange={(e) => setText(e.target.value)} disabled={locked} rows={5} className="mt-3 text-[15px]" />
       {post.error ? <p className="mt-2 text-xs text-danger">{post.error}</p> : null}
@@ -70,11 +87,11 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
           <>
             {text !== post.content ? (
               <Button size="sm" variant="secondary" loading={busy === "save"} onClick={() => run("save", () => save())}>
-                Save edit
+                {t("Save edit")}
               </Button>
             ) : null}
             <Button size="sm" variant="secondary" loading={busy === "approve"} onClick={() => run("approve", () => save({ approved: post.status !== "approved" }))}>
-              <Check className="size-3.5" aria-hidden /> {post.status === "approved" ? "Unapprove" : "Approve"}
+              <Check className="size-3.5" aria-hidden /> {t(post.status === "approved" ? "Unapprove" : "Approve")}
             </Button>
             {post.integrationId ? (
               <Button
@@ -88,7 +105,7 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
                   })
                 }
               >
-                <Send className="size-3.5" aria-hidden /> Publish
+                <Send className="size-3.5" aria-hidden /> {t("Publish")}
               </Button>
             ) : null}
           </>
@@ -102,14 +119,14 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
             setTimeout(() => setCopied(false), 1500);
           }}
         >
-          <Copy className="size-3.5" aria-hidden /> {copied ? "Copied" : "Copy"}
+          <Copy className="size-3.5" aria-hidden /> {t(copied ? "Copied" : "Copy")}
         </Button>
         {!locked ? (
           <Button
             size="sm"
             variant="ghost"
-            className="ml-auto text-muted"
-            aria-label="Discard post"
+            className="ms-auto text-muted"
+            aria-label={t("Discard post")}
             loading={busy === "discard"}
             onClick={() =>
               run("discard", async () => {
@@ -118,7 +135,7 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
               })
             }
           >
-            <X className="size-3.5" aria-hidden /> Discard
+            <X className="size-3.5" aria-hidden /> {t("Discard")}
           </Button>
         ) : null}
       </div>
@@ -128,6 +145,8 @@ function PostCard({ post, onChange, onGone }: { post: BoardPost; onChange: (p: B
 
 export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { campaign: BoardCampaign; initialPosts: BoardPost[]; publisherConnected: boolean }) {
   const router = useRouter();
+  const t = useT();
+  const lang = useLang();
   const [c, setC] = useState(campaign);
   const [posts, setPosts] = useState(initialPosts);
   const [busy, setBusy] = useState<string | null>(null);
@@ -140,7 +159,7 @@ export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { 
       await fn();
       router.refresh();
     } catch (e) {
-      setError(errorMessage(e));
+      setError(t(errorMessage(e)));
     } finally {
       setBusy(null);
     }
@@ -160,27 +179,27 @@ export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <Badge tone={statusTone(c.status)}>{c.status}</Badge>
+              <Badge tone={statusTone(c.status)}>{t(STATUS_LABEL[c.status] ?? c.status)}</Badge>
               <span className="text-sm text-muted">
-                {c.objective} · {c.postsPerDay} post{c.postsPerDay === 1 ? "" : "s"}/day
+                {t(OBJECTIVE_LABEL[c.objective] ?? c.objective)} · {t(c.postsPerDay === 1 ? "{n} post/day" : "{n} posts/day", { n: c.postsPerDay })}
               </span>
             </div>
             <p className="mt-3 font-display text-5xl">
               {money(c.monthlyBudgetCents)}
-              <span className="font-sans text-sm text-muted"> /month planned</span>
+              <span className="font-sans text-sm text-muted"> {t("/month planned")}</span>
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" loading={busy === "plan"} onClick={() => run("plan", async () => setC((await api<{ campaign: BoardCampaign }>(`/api/campaigns/${c.id}/plan`, { method: "POST", body: {} })).campaign))}>
-              <Sparkles className="size-4" aria-hidden /> {c.plan ? "Replan" : "Plan budget"}
+              <Sparkles className="size-4" aria-hidden /> {t(c.plan ? "Replan" : "Plan budget")}
             </Button>
             {c.status === "active" ? (
               <Button variant="secondary" loading={busy === "status"} onClick={() => setStatus("paused")}>
-                <Pause className="size-4" aria-hidden /> Pause
+                <Pause className="size-4" aria-hidden /> {t("Pause")}
               </Button>
             ) : (
               <Button loading={busy === "status"} onClick={() => setStatus("active")}>
-                <Play className="size-4" aria-hidden /> Activate
+                <Play className="size-4" aria-hidden /> {t("Activate")}
               </Button>
             )}
           </div>
@@ -212,11 +231,11 @@ export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { 
             </ul>
             <div className="mt-5 grid gap-5 text-sm sm:grid-cols-3">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-accent">Cadence</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-accent">{t("Cadence")}</p>
                 <p className="mt-1 leading-relaxed">{c.plan.cadence}</p>
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-accent">Angles</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-accent">{t("Angles")}</p>
                 <ul className="mt-1 space-y-0.5">
                   {c.plan.angles.map((a) => (
                     <li key={a}>{a}</li>
@@ -224,7 +243,7 @@ export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { 
                 </ul>
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-accent">Track</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-accent">{t("Track")}</p>
                 <ul className="mt-1 space-y-0.5">
                   {c.plan.kpis.map((k) => (
                     <li key={k}>{k}</li>
@@ -232,17 +251,17 @@ export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { 
                 </ul>
               </div>
             </div>
-            <p className="mt-5 text-xs text-muted">Kitforge writes and schedules your organic posts. Use the allocation above when you set paid budgets inside each network&apos;s ads manager; spend there is billed by the network.</p>
+            <p className="mt-5 text-xs text-muted">{t("Kitforge writes and schedules your organic posts. Use the allocation above when you set paid budgets inside each network's ads manager; spend there is billed by the network.")}</p>
           </div>
         ) : (
-          <p className="mt-5 text-sm text-muted">No plan yet. Run the ad planner to split this budget across your channels.</p>
+          <p className="mt-5 text-sm text-muted">{t("No plan yet. Run the ad planner to split this budget across your channels.")}</p>
         )}
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-3xl">Posts</h2>
-          {!publisherConnected ? <p className="text-sm text-muted">No publishing service is connected. Copy posts by hand, or connect Buffer (free) in Settings to publish from here.</p> : null}
+          <h2 className="font-display text-3xl">{t("Posts")}</h2>
+          {!publisherConnected ? <p className="text-sm text-muted">{t("No publishing service is connected. Copy posts by hand, or connect Buffer (free) in Settings to publish from here.")}</p> : null}
         </div>
         <Button
           loading={busy === "posts"}
@@ -253,21 +272,21 @@ export function CampaignBoard({ campaign, initialPosts, publisherConnected }: { 
             })
           }
         >
-          <Sparkles className="size-4" aria-hidden /> Write today&apos;s posts
+          <Sparkles className="size-4" aria-hidden /> {t("Write today's posts")}
         </Button>
       </div>
 
       {posts.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-line px-6 py-12 text-center text-sm text-muted">No posts yet. The daily poster writes {c.postsPerDay} a day once you ask, or automatically with autopilot on.</p>
+        <p className="rounded-2xl border border-dashed border-line px-6 py-12 text-center text-sm text-muted">{t("No posts yet. The daily poster writes {n} a day once you ask, or automatically with autopilot on.", { n: c.postsPerDay })}</p>
       ) : (
         <div className="space-y-8">
-          {groupByDay(posts).map(([day, items]) => (
+          {groupByDay(posts, lang).map(([day, items]) => (
             <section key={day} aria-label={day}>
               <h3 className="mb-3 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
                 {day}
                 <span className="h-px flex-1 bg-line" aria-hidden />
                 <span>
-                  {items.length} post{items.length === 1 ? "" : "s"}
+                  {t(items.length === 1 ? "{n} post" : "{n} posts", { n: items.length })}
                 </span>
               </h3>
               <div className="grid gap-4 lg:grid-cols-2">

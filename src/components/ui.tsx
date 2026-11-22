@@ -81,7 +81,7 @@ export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<H
 
 export function Select({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select {...props} className={cn(field, "h-11 appearance-none pr-8", className)}>
+    <select {...props} className={cn(field, "h-11 appearance-none pe-8", className)}>
       {children}
     </select>
   );

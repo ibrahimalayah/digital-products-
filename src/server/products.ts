@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { writeOutline, writeSection } from "@/lib/ai";
 import { consume, refund } from "@/lib/usage";
-import { badRequest, forbidden, notFound } from "@/lib/errors";
+import { badRequest, forbidden, msg, notFound } from "@/lib/errors";
 import { newId, slugify } from "@/lib/utils";
 import { logRun } from "./agents-log";
 import { getSettings } from "./settings";
@@ -60,11 +60,11 @@ const briefOf = (p: Product) => ({ title: p.title, promise: p.promise, audience:
 /** Step 1 of generation. Consumes one monthly product credit. */
 export async function generateOutline(user: CurrentUser, id: string): Promise<Product> {
   const p = await getOwnedProduct(user.id, id);
-  if (p.status === "published") throw badRequest("Unpublish the product before regenerating it.");
+  if (p.status === "published") throw badRequest(msg("Unpublish the product before regenerating it."));
   await consume(user, "products");
   try {
     const outline = await writeOutline(briefOf(p));
-    if (!outline.sections.length) throw badRequest("The outline came back empty. Try again.");
+    if (!outline.sections.length) throw badRequest(msg("The outline came back empty. Try again."));
     const [row] = await db
       .update(schema.products)
       .set({ outline, sections: [], status: "generating" })
@@ -81,11 +81,11 @@ export async function generateOutline(user: CurrentUser, id: string): Promise<Pr
 /** Step 2..n. Writes one section; the client calls this once per section so no request runs long. */
 export async function generateSection(user: CurrentUser, id: string, index: number): Promise<Product> {
   const p = await getOwnedProduct(user.id, id);
-  if (!p.outline) throw badRequest("Generate the outline first.");
-  if (p.status !== "generating") throw badRequest("This product is not being generated.");
-  if (index < 0 || index >= p.outline.sections.length) throw badRequest("Section does not exist.");
+  if (!p.outline) throw badRequest(msg("Generate the outline first."));
+  if (p.status !== "generating") throw badRequest(msg("This product is not being generated."));
+  if (index < 0 || index >= p.outline.sections.length) throw badRequest(msg("Section does not exist."));
   // One write per section per outline. Rewriting means a new outline, which costs a product credit.
-  if (p.sections[index]) throw badRequest("This section is already written. Regenerate the product to rewrite it.");
+  if (p.sections[index]) throw badRequest(msg("This section is already written. Regenerate the product to rewrite it."));
   const section = await writeSection(briefOf(p), p.outline, index);
   const fresh = await getOwnedProduct(user.id, id);
   const sections = [...fresh.sections];
@@ -112,10 +112,10 @@ export async function updateProduct(
   const set: Partial<typeof schema.products.$inferInsert> = { ...fields };
   if (published !== undefined) {
     // The public store sells the platform owner's catalog only.
-    if (user.role !== "admin") throw forbidden("Only the store owner can publish to the public store.");
+    if (user.role !== "admin") throw forbidden(msg("Only the store owner can publish to the public store."));
     if (published) {
-      if (p.status !== "ready" && p.status !== "published") throw badRequest("Finish generating the product before publishing.");
-      if ((fields.priceCents ?? p.priceCents) < 100) throw badRequest("Set a price of at least $1 before publishing.");
+      if (p.status !== "ready" && p.status !== "published") throw badRequest(msg("Finish generating the product before publishing."));
+      if ((fields.priceCents ?? p.priceCents) < 100) throw badRequest(msg("Set a price of at least $1 before publishing."));
       set.status = "published";
     } else if (p.status === "published") set.status = "ready";
   }
@@ -127,7 +127,7 @@ export async function updateProduct(
 export async function deleteProduct(user: CurrentUser, id: string) {
   const p = await getOwnedProduct(user.id, id);
   const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.orders).where(eq(schema.orders.productId, p.id));
-  if (n > 0) throw badRequest("This product has buyers, so it cannot be deleted. Unpublish it instead.");
+  if (n > 0) throw badRequest(msg("This product has buyers, so it cannot be deleted. Unpublish it instead."));
   await db.delete(schema.products).where(eq(schema.products.id, p.id));
 }
 

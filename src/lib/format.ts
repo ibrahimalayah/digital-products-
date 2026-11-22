@@ -6,12 +6,16 @@ export function money(cents: number, currency = "USD") {
   }).format(cents / 100);
 }
 
-export function shortDate(d: Date | string) {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(d));
+/** The Intl locale for an interface language id. English stays "en-US" so its output never changes. */
+const locale = (lang?: string) => (!lang || lang === "en" ? "en-US" : lang);
+
+/** `lang` is the visitor's language id (from getI18n() / useLang()); English when omitted. */
+export function shortDate(d: Date | string, lang?: string) {
+  return new Intl.DateTimeFormat(locale(lang), { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(d));
 }
 
-export function dateTime(d: Date | string) {
-  return new Intl.DateTimeFormat("en-US", {
+export function dateTime(d: Date | string, lang?: string) {
+  return new Intl.DateTimeFormat(locale(lang), {
     month: "short",
     day: "numeric",
     hour: "numeric",

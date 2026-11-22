@@ -1,4 +1,5 @@
 import * as buffer from "./buffer";
+import { msg } from "./i18n";
 import * as postiz from "./postiz";
 
 /** The services that can publish posts to a creator's social accounts. */
@@ -11,13 +12,13 @@ export type PublisherAuth = { kind: PublisherKind; key: string };
 export const PUBLISHERS: Record<PublisherKind, { name: string; summary: string; keyHelp: string }> = {
   buffer: {
     name: "Buffer",
-    summary: "Free for up to 3 channels. Publishes text posts to X, LinkedIn, Facebook, Threads, Bluesky, Mastodon and Google Business.",
-    keyHelp: "In Buffer open Settings → API (publish.buffer.com/settings/api) and create a key.",
+    summary: msg("Free for up to 3 channels. Publishes text posts to X, LinkedIn, Facebook, Threads, Bluesky, Mastodon and Google Business."),
+    keyHelp: msg("In Buffer open Settings → API (publish.buffer.com/settings/api) and create a key."),
   },
   postiz: {
     name: "Postiz",
-    summary: "Paid cloud plans, or free if you host it yourself. Connects to 28+ networks.",
-    keyHelp: "In Postiz open Settings → Developers → Public API and copy the key.",
+    summary: msg("Paid cloud plans, or free if you host it yourself. Connects to 28+ networks."),
+    keyHelp: msg("In Postiz open Settings → Developers → Public API and copy the key."),
   },
 };
 

@@ -1,18 +1,20 @@
 // Languages the agents can write in, with the fixed labels the PDF prints.
 // Arabic is written right to left: the PDF mirrors its layout and uses an Arabic font.
 
+import { msg } from "./i18n";
+
 export const LANGUAGES = [
-  { id: "en", name: "English" },
-  { id: "es", name: "Spanish" },
-  { id: "fr", name: "French" },
-  { id: "de", name: "German" },
-  { id: "pt", name: "Portuguese" },
-  { id: "it", name: "Italian" },
-  { id: "nl", name: "Dutch" },
-  { id: "sv", name: "Swedish" },
-  { id: "da", name: "Danish" },
-  { id: "no", name: "Norwegian" },
-  { id: "ar", name: "Arabic" },
+  { id: "en", name: msg("English") },
+  { id: "es", name: msg("Spanish") },
+  { id: "fr", name: msg("French") },
+  { id: "de", name: msg("German") },
+  { id: "pt", name: msg("Portuguese") },
+  { id: "it", name: msg("Italian") },
+  { id: "nl", name: msg("Dutch") },
+  { id: "sv", name: msg("Swedish") },
+  { id: "da", name: msg("Danish") },
+  { id: "no", name: msg("Norwegian") },
+  { id: "ar", name: msg("Arabic") },
 ] as const;
 
 export type LanguageId = (typeof LANGUAGES)[number]["id"];

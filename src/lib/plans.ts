@@ -1,4 +1,5 @@
 import type { PlanId } from "./types";
+import { msg } from "./i18n";
 
 export type Plan = {
   id: PlanId;
@@ -17,12 +18,13 @@ export type Plan = {
   features: string[];
 };
 
+// name, tagline and features are English keys: show them with t(plan.name) etc.
 export const PLANS: Record<PlanId, Plan> = {
   free: {
     id: "free",
-    name: "Starter",
+    name: msg("Starter"),
     priceCents: 0,
-    tagline: "Try the studio and finish your first product.",
+    tagline: msg("Try the studio and finish your first product."),
     limits: {
       ideasPerMonth: 3,
       productsPerMonth: 1,
@@ -32,13 +34,19 @@ export const PLANS: Record<PlanId, Plan> = {
       monthlyAdBudgetCents: 50_00,
       autopilot: false,
     },
-    features: ["3 idea research runs a month", "1 full product a month", "2 short lead videos a month", "1 campaign, up to $50 planned budget", "Print-ready PDF export"],
+    features: [
+      msg("3 idea research runs a month"),
+      msg("1 full product a month"),
+      msg("2 short lead videos a month"),
+      msg("1 campaign, up to $50 planned budget"),
+      msg("Print-ready PDF export"),
+    ],
   },
   pro: {
     id: "pro",
-    name: "Pro",
+    name: msg("Pro"),
     priceCents: 19_00,
-    tagline: "For creators shipping a product line.",
+    tagline: msg("For creators shipping a product line."),
     limits: {
       ideasPerMonth: 40,
       productsPerMonth: 15,
@@ -48,13 +56,20 @@ export const PLANS: Record<PlanId, Plan> = {
       monthlyAdBudgetCents: 500_00,
       autopilot: true,
     },
-    features: ["40 idea research runs a month", "15 full products a month", "30 short lead videos a month", "5 campaigns, up to $500 planned budget", "Daily autopilot: 3 posts a day per campaign", "Auto-publish through Buffer or Postiz"],
+    features: [
+      msg("40 idea research runs a month"),
+      msg("15 full products a month"),
+      msg("30 short lead videos a month"),
+      msg("5 campaigns, up to $500 planned budget"),
+      msg("Daily autopilot: 3 posts a day per campaign"),
+      msg("Auto-publish through Buffer or Postiz"),
+    ],
   },
   business: {
     id: "business",
-    name: "Business",
+    name: msg("Business"),
     priceCents: 49_00,
-    tagline: "For studios and agencies running many launches.",
+    tagline: msg("For studios and agencies running many launches."),
     limits: {
       ideasPerMonth: 200,
       productsPerMonth: 60,
@@ -64,7 +79,14 @@ export const PLANS: Record<PlanId, Plan> = {
       monthlyAdBudgetCents: 5_000_00,
       autopilot: true,
     },
-    features: ["200 idea research runs a month", "60 full products a month", "150 short lead videos a month", "25 campaigns, up to $5,000 planned budget", "Daily autopilot: 10 posts a day per campaign", "Auto-approve and hands-off publishing"],
+    features: [
+      msg("200 idea research runs a month"),
+      msg("60 full products a month"),
+      msg("150 short lead videos a month"),
+      msg("25 campaigns, up to $5,000 planned budget"),
+      msg("Daily autopilot: 10 posts a day per campaign"),
+      msg("Auto-approve and hands-off publishing"),
+    ],
   },
 };
 

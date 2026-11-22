@@ -8,8 +8,12 @@ import { listPosts } from "@/server/campaigns";
 import { publicSettings } from "@/server/settings";
 import { PageHeader } from "@/components/ui";
 import { CampaignBoard } from "@/components/studio/campaign-board";
+import { getT } from "@/lib/i18n-server";
 
-export const metadata: Metadata = { title: "Campaign" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Campaign") };
+}
 
 export default async function CampaignDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,14 +25,14 @@ export default async function CampaignDetail({ params }: { params: Promise<{ id:
     .where(and(eq(schema.campaigns.id, id), eq(schema.campaigns.userId, user.id)))
     .limit(1);
   if (!row) notFound();
-  const [posts, settings] = await Promise.all([listPosts(user.id, id), publicSettings(user.id)]);
+  const [posts, settings, t] = await Promise.all([listPosts(user.id, id), publicSettings(user.id), getT()]);
   const c = row.c;
   return (
     <>
       <Link href="/app/campaigns" className="mb-6 inline-block text-sm text-muted hover:text-ink">
-        ← Campaigns
+        {t("← Campaigns")}
       </Link>
-      <PageHeader eyebrow={`Campaign for ${row.productTitle}`} title={c.name} />
+      <PageHeader eyebrow={t("Campaign for {product}", { product: row.productTitle })} title={c.name} />
       <CampaignBoard
         publisherConnected={settings.publisherConnected}
         campaign={{ id: c.id, name: c.name, status: c.status, objective: c.objective, monthlyBudgetCents: c.monthlyBudgetCents, postsPerDay: c.postsPerDay, plan: c.plan }}

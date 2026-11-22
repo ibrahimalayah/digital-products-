@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { AppError, badRequest, forbidden } from "./errors";
+import { AppError, badRequest, forbidden, msg } from "./errors";
+import { getT } from "./i18n-server";
 import { dbReady } from "@/db";
 import { appUrl } from "./env";
 
@@ -20,20 +21,22 @@ export function route<P = Record<string, string>>(
       const out = await fn(req, await ctx.params);
       return out instanceof Response ? out : NextResponse.json(out);
     } catch (e) {
+      // The one place error text is put into the visitor's language: errors carry
+      // their English sentence (marked with msg() where thrown) plus placeholders.
+      const t = await getT();
       if (e instanceof AppError) {
-        return NextResponse.json({ error: { code: e.code, message: e.message } }, { status: e.status });
+        return NextResponse.json({ error: { code: e.code, message: e.localized(t) } }, { status: e.status });
       }
       if (e instanceof z.ZodError) {
         const first = e.issues[0];
         const where = first?.path.length ? `${first.path.join(".")}: ` : "";
-        return NextResponse.json(
-          { error: { code: "invalid_input", message: `${where}${first?.message ?? "Invalid input."}` } },
-          { status: 400 },
-        );
+        // A schema's own message translates when it was marked with msg(); zod's built-in ones stay English.
+        const what = first ? t(first.message) : t("Invalid input.");
+        return NextResponse.json({ error: { code: "invalid_input", message: `${where}${what}` } }, { status: 400 });
       }
       console.error("[api]", req.method, new URL(req.url).pathname, e);
       return NextResponse.json(
-        { error: { code: "server_error", message: "Something went wrong on our side. Try again." } },
+        { error: { code: "server_error", message: t("Something went wrong on our side. Try again.") } },
         { status: 500 },
       );
     }
@@ -45,11 +48,11 @@ export function assertSameOrigin(req: Request) {
   const origin = req.headers.get("origin");
   if (!origin) {
     // Non-browser clients send no Origin; browsers always do on cross-site writes.
-    if (req.headers.get("sec-fetch-site") === "cross-site") throw forbidden("Cross-site request blocked.");
+    if (req.headers.get("sec-fetch-site") === "cross-site") throw forbidden(msg("Cross-site request blocked."));
     return;
   }
   const allowed = new Set([new URL(appUrl()).origin, new URL(req.url).origin]);
-  if (!allowed.has(origin)) throw forbidden("Cross-site request blocked.");
+  if (!allowed.has(origin)) throw forbidden(msg("Cross-site request blocked."));
 }
 
 export async function body<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T>> {
@@ -57,7 +60,7 @@ export async function body<T extends z.ZodType>(req: Request, schema: T): Promis
   try {
     json = await req.json();
   } catch {
-    throw badRequest("Request body must be JSON.");
+    throw badRequest(msg("Request body must be JSON."));
   }
   return schema.parse(json);
 }

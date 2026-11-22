@@ -1,6 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { badRequest, notFound } from "@/lib/errors";
+import { badRequest, msg, notFound } from "@/lib/errors";
 import type { PlanId } from "@/lib/types";
 
 export async function adminStats() {
@@ -46,7 +46,7 @@ export function adminUsers() {
 
 export async function adminUpdateUser(actorId: string, id: string, patch: { plan?: PlanId; role?: "user" | "admin"; suspended?: boolean }) {
   if (id === actorId && (patch.role === "user" || patch.suspended)) {
-    throw badRequest("You cannot remove your own admin access or suspend yourself.");
+    throw badRequest(msg("You cannot remove your own admin access or suspend yourself."));
   }
   const [row] = await db.update(schema.user).set(patch).where(eq(schema.user.id, id)).returning({ id: schema.user.id });
   if (!row) throw notFound("User");

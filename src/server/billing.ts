@@ -4,7 +4,7 @@ import { db, schema } from "@/db";
 import { stripe } from "@/lib/stripe";
 import { appUrl } from "@/lib/env";
 import { PLANS } from "@/lib/plans";
-import { badRequest, notFound } from "@/lib/errors";
+import { badRequest, msg, notFound } from "@/lib/errors";
 import { newId } from "@/lib/utils";
 import { getStoreProduct } from "./products";
 import type { CurrentUser } from "@/lib/session";
@@ -26,7 +26,7 @@ export async function productCheckout(user: CurrentUser, slug: string): Promise<
     .from(schema.orders)
     .where(sql`${schema.orders.userId} = ${user.id} and ${schema.orders.productId} = ${p.id} and ${schema.orders.status} = 'paid'`)
     .limit(1);
-  if (owned) throw badRequest("You already own this product. Find it in your library.");
+  if (owned) throw badRequest(msg("You already own this product. Find it in your library."));
   const session = await stripe().checkout.sessions.create({
     mode: "payment",
     customer: await ensureCustomer(user),
@@ -44,13 +44,13 @@ export async function productCheckout(user: CurrentUser, slug: string): Promise<
     success_url: `${appUrl()}/app/library?purchased=${encodeURIComponent(p.slug)}`,
     cancel_url: `${appUrl()}/store/${p.slug}`,
   });
-  if (!session.url) throw badRequest("Checkout could not be started.");
+  if (!session.url) throw badRequest(msg("Checkout could not be started."));
   return session.url;
 }
 
 export async function planCheckout(user: CurrentUser, planId: PlanId): Promise<string> {
   const plan = PLANS[planId];
-  if (!plan || plan.priceCents <= 0) throw badRequest("Pick a paid plan.");
+  if (!plan || plan.priceCents <= 0) throw badRequest(msg("Pick a paid plan."));
   if (user.stripeSubscriptionId && user.plan !== "free") {
     // Existing subscribers change plan in the billing portal so they are not charged twice.
     return portalUrl(user);
@@ -74,12 +74,12 @@ export async function planCheckout(user: CurrentUser, planId: PlanId): Promise<s
     success_url: `${appUrl()}/app/billing?upgraded=1`,
     cancel_url: `${appUrl()}/app/billing`,
   });
-  if (!session.url) throw badRequest("Checkout could not be started.");
+  if (!session.url) throw badRequest(msg("Checkout could not be started."));
   return session.url;
 }
 
 export async function portalUrl(user: CurrentUser): Promise<string> {
-  if (!user.stripeCustomerId) throw badRequest("You have no billing account yet.");
+  if (!user.stripeCustomerId) throw badRequest(msg("You have no billing account yet."));
   const s = await stripe().billingPortal.sessions.create({ customer: user.stripeCustomerId, return_url: `${appUrl()}/app/billing` });
   return s.url;
 }
