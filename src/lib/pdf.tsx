@@ -1,4 +1,6 @@
-import { Document, Page, Text, View, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
+import { Document, Ellipse, Line, Page, Polygon, Polyline, Svg, Text, View, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
+import { drawingKind, makeDrawing, type Shape } from "./drawings";
+import { labelsFor, type Labels } from "./languages";
 import type { Block, ProductOutline, ProductSection } from "./types";
 
 export type PdfProduct = {
@@ -10,6 +12,8 @@ export type PdfProduct = {
   outline: ProductOutline | null;
   sections: ProductSection[];
   brand: string;
+  /** Language id; fixed labels are printed in it. English when missing. */
+  language?: string;
 };
 
 const INK = "#1b1a17";
@@ -48,8 +52,44 @@ const s = StyleSheet.create({
   cell: { width: "14.28%", height: 44, borderWidth: 0.75, borderColor: RULE, padding: 4, fontSize: 8, color: MUTED },
 });
 
-function BlockView({ b, accent }: { b: Block; accent: string }) {
+const FILL = { none: "none", white: "#ffffff", shade: "#e3dfd5", ink: INK } as const;
+
+function ShapeView({ sh }: { sh: Shape }) {
+  if (sh.t === "line") return <Line x1={sh.a[0]} y1={sh.a[1]} x2={sh.b[0]} y2={sh.b[1]} stroke={INK} strokeWidth={sh.thin ? 0.6 : 1.6} strokeDasharray={sh.dash ? "6 4" : undefined} />;
+  if (sh.t === "ellipse") return <Ellipse cx={sh.c[0]} cy={sh.c[1]} rx={sh.rx} ry={sh.ry} stroke={INK} strokeWidth={1.6} fill={FILL[sh.fill ?? "white"]} />;
+  if (sh.t === "text")
+    return (
+      <Text x={sh.at[0]} y={sh.at[1]} style={{ fontSize: sh.size, fontFamily: "Helvetica-Bold" }} fill={INK}>
+        {sh.s}
+      </Text>
+    );
+  const points = sh.pts.map((p) => p.join(",")).join(" ");
+  const common = { points, stroke: INK, strokeWidth: 1.6, strokeDasharray: sh.dash ? "6 4" : undefined, fill: FILL[sh.fill ?? "white"] };
+  return sh.open ? <Polyline {...common} /> : <Polygon {...common} />;
+}
+
+function DrawingView({ b, L }: { b: Block; L: Labels }) {
+  const d = makeDrawing(drawingKind(b.text), b.title);
+  const size = d.family === "net" ? 450 : 410;
+  return (
+    <View style={s.block} wrap={false}>
+      {b.title ? <Text style={s.blockTitle}>{b.title}</Text> : null}
+      <Text style={{ fontSize: 9.5, color: MUTED, marginBottom: 8 }}>{L[d.family]}</Text>
+      <View style={{ alignItems: "center" }}>
+        <Svg viewBox={`0 0 ${d.w} ${d.h}`} width={size} height={size}>
+          {d.shapes.map((sh, i) => (
+            <ShapeView key={i} sh={sh} />
+          ))}
+        </Svg>
+      </View>
+    </View>
+  );
+}
+
+function BlockView({ b, accent, L }: { b: Block; accent: string; L: Labels }) {
   switch (b.type) {
+    case "drawing":
+      return <DrawingView b={b} L={L} />;
     case "steps":
       return (
         <View style={s.block}>
@@ -97,7 +137,7 @@ function BlockView({ b, accent }: { b: Block; accent: string }) {
     case "stuck":
       return (
         <View style={[s.callout, { borderLeftColor: b.type === "tip" ? accent : INK }]} wrap={false}>
-          <Text style={[s.calloutLabel, { color: b.type === "tip" ? accent : INK }]}>{b.type === "tip" ? "Pro tip" : "If you're stuck"}</Text>
+          <Text style={[s.calloutLabel, { color: b.type === "tip" ? accent : INK }]}>{b.type === "tip" ? L.tip : L.stuck}</Text>
           <Text>{b.text}</Text>
         </View>
       );
@@ -115,18 +155,18 @@ function Footer({ title }: { title: string }) {
   );
 }
 
-function Extra({ name, accent }: { name: string; accent: string }) {
+function Extra({ name, accent, L }: { name: string; accent: string; L: Labels }) {
   const lower = name.toLowerCase();
   const isTracker = /track|calendar|log|habit|progress/.test(lower);
   return (
     <>
-      <Text style={[s.eyebrow, { color: accent }]}>Extras</Text>
+      <Text style={[s.eyebrow, { color: accent }]}>{L.extras}</Text>
       <Text style={s.h1}>{name}</Text>
       {isTracker ? (
         <View style={s.grid}>
           {Array.from({ length: 28 }, (_, i) => (
             <Text key={i} style={s.cell}>
-              Day {i + 1}
+              {L.day} {i + 1}
             </Text>
           ))}
         </View>
@@ -148,6 +188,7 @@ export function ProductDocument({ p }: { p: PdfProduct }) {
   const size = p.pageSize === "A4" ? "A4" : "LETTER";
   const accent = /^#[0-9a-f]{6}$/i.test(p.accent) ? p.accent : "#1f6f5c";
   const o = p.outline;
+  const L = labelsFor(p.language ?? "en");
   return (
     <Document title={p.title} author={p.brand} subject={p.promise}>
       <Page size={size} style={s.cover}>
@@ -156,20 +197,25 @@ export function ProductDocument({ p }: { p: PdfProduct }) {
         </View>
         <View style={s.coverBody}>
           <Text style={s.coverSub}>{o?.subtitle || p.promise}</Text>
-          <Text style={{ fontSize: 9, color: MUTED, letterSpacing: 1.4, textTransform: "uppercase" }}>{p.brand}</Text>
+          <View>
+            <Text style={{ fontSize: 9, color: MUTED, letterSpacing: 1.4, textTransform: "uppercase" }}>{p.brand}</Text>
+            <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 6 }}>
+              © {new Date().getFullYear()} {p.brand}. {L.rights}
+            </Text>
+          </View>
         </View>
       </Page>
 
       {o ? (
         <Page size={size} style={s.page}>
-          <Text style={[s.eyebrow, { color: accent }]}>Welcome</Text>
-          <Text style={s.h1}>Start here</Text>
+          <Text style={[s.eyebrow, { color: accent }]}>{L.welcome}</Text>
+          <Text style={s.h1}>{L.startHere}</Text>
           {o.welcome.split(/\n+/).map((para, i) => (
             <Text key={i} style={s.p}>
               {para}
             </Text>
           ))}
-          <Text style={[s.blockTitle, { marginTop: 10 }]}>How to use this</Text>
+          <Text style={[s.blockTitle, { marginTop: 10 }]}>{L.howToUse}</Text>
           {o.howToUse.map((it, i) => (
             <View key={i} style={s.row}>
               <Text style={[s.num, { color: accent }]}>{i + 1}.</Text>
@@ -181,8 +227,8 @@ export function ProductDocument({ p }: { p: PdfProduct }) {
       ) : null}
 
       <Page size={size} style={s.page}>
-        <Text style={[s.eyebrow, { color: accent }]}>Contents</Text>
-        <Text style={s.h1}>What&apos;s inside</Text>
+        <Text style={[s.eyebrow, { color: accent }]}>{L.contents}</Text>
+        <Text style={s.h1}>{L.inside}</Text>
         {p.sections.filter(Boolean).map((sec, i) => (
           <View key={i} wrap={false}>
             <View style={s.tocRow}>
@@ -200,7 +246,7 @@ export function ProductDocument({ p }: { p: PdfProduct }) {
         {o?.extras.length ? (
           <View wrap={false}>
             <View style={s.tocRow}>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Extras</Text>
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>{L.extras}</Text>
             </View>
             {o.extras.map((e, i) => (
               <Text key={i} style={s.tocSub}>
@@ -222,12 +268,16 @@ export function ProductDocument({ p }: { p: PdfProduct }) {
           {sec.pages.map((pg, j) => (
             <View key={j} break>
               <Text style={[s.eyebrow, { color: accent }]}>
-                {sec.title} · {j + 1} of {sec.pages.length}
+                {sec.title} · {j + 1} {L.of} {sec.pages.length}
               </Text>
               <Text style={s.h2}>{pg.heading}</Text>
-              <Text style={s.goal}>Goal: {pg.goal}</Text>
+              {pg.goal ? (
+                <Text style={s.goal}>
+                  {L.goal}: {pg.goal}
+                </Text>
+              ) : null}
               {pg.blocks.map((b, k) => (
-                <BlockView key={k} b={b} accent={accent} />
+                <BlockView key={k} b={b} accent={accent} L={L} />
               ))}
             </View>
           ))}
@@ -237,7 +287,7 @@ export function ProductDocument({ p }: { p: PdfProduct }) {
 
       {(o?.extras ?? []).map((e, i) => (
         <Page key={`e${i}`} size={size} style={s.page}>
-          <Extra name={e} accent={accent} />
+          <Extra name={e} accent={accent} L={L} />
           <Footer title={p.title} />
         </Page>
       ))}

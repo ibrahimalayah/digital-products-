@@ -2,9 +2,11 @@ import { generateText, Output, type LanguageModel } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { AppError } from "./errors";
-import type { Block, BudgetPlan, ProductOutline, ProductSection, VideoScript } from "./types";
+import type { Block, BudgetPlan, ProductOutline, ProductPage, ProductSection, VideoScript } from "./types";
 import * as fixture from "./ai-fixture";
 import { chainProviders, completeJson } from "./ai-chain";
+import { DRAWING_KINDS, drawingKind, isKidsProduct, type DrawingKind } from "./drawings";
+import { languageName } from "./languages";
 
 /**
  * Which model answers when the free-tier chain (src/lib/ai-chain.ts) is not
@@ -79,7 +81,7 @@ export const ideaSchema = z.object({
 const ideasSchema = z.object({ ideas: z.array(ideaSchema) });
 export type IdeaDraft = z.infer<typeof ideaSchema>;
 
-export async function researchIdeas(niche: string, brandVoice: string): Promise<IdeaDraft[]> {
+export async function researchIdeas(niche: string, brandVoice: string, language = "en"): Promise<IdeaDraft[]> {
   if (fixtureMode()) return fixture.ideas(niche);
   const out = await structured(
     ideasSchema,
@@ -92,7 +94,7 @@ export async function researchIdeas(niche: string, brandVoice: string): Promise<
       "- format: what is inside (for example '4 letter templates, a call script and a checklist')\n" +
       "- proof: two short sentences on why people would pay for this, then the exact search phrases the owner should check to confirm demand. Do not state numbers.\n" +
       "- suggestedPriceUsd: a whole-dollar price between 5 and 49\n" +
-      "Favour urgent problems with a clear outcome over broad topics.",
+      `Favour urgent problems with a clear outcome over broad topics. Write every field in ${languageName(language)}.`,
     3000,
   );
   return out.ideas.slice(0, 8);
@@ -112,7 +114,7 @@ const outlineSchema = z.object({
 // unused ones are optional here and filled in after parsing.
 // Smaller models also invent block types now and then, so the type is read as
 // text and mapped onto a known one afterwards.
-const BLOCK_TYPES = ["paragraph", "steps", "checklist", "tip", "stuck", "template", "fill"] as const;
+const BLOCK_TYPES = ["paragraph", "steps", "checklist", "tip", "stuck", "template", "fill", "drawing"] as const;
 const blockSchema = z.object({
   type: z.string(),
   title: z.string().nullish(),
@@ -128,6 +130,7 @@ export function blockType(type: string, hasItems: boolean): Block["type"] {
   const t = type.trim().toLowerCase();
   const known = BLOCK_TYPES.find((k) => k === t);
   if (known) return known;
+  if (/draw|maze|colou?r|dot|craft|puzzle|\bnet\b|activity/.test(t)) return "drawing";
   if (/check|tick/.test(t)) return "checklist";
   if (/step|number|action/.test(t)) return "steps";
   if (/fill|question|prompt|reflect|journal|worksheet/.test(t)) return "fill";
@@ -143,10 +146,13 @@ export type ProductBrief = {
   audience: string;
   format: string;
   tone: string;
+  /** Language id from src/lib/languages.ts. English when missing. */
+  language?: string;
 };
 
 const brief = (p: ProductBrief) =>
-  [fence("title", p.title), fence("promise", p.promise), fence("audience", p.audience), fence("format", p.format), fence("tone", p.tone)].join("\n");
+  [fence("title", p.title), fence("promise", p.promise), fence("audience", p.audience), fence("format", p.format), fence("tone", p.tone)].join("\n") +
+  `\nLanguage: write every word of your answer in ${languageName(p.language ?? "en")}.`;
 
 export async function writeOutline(p: ProductBrief): Promise<ProductOutline> {
   if (fixtureMode()) return fixture.outline(p.title);
@@ -169,7 +175,11 @@ export async function writeOutline(p: ProductBrief): Promise<ProductOutline> {
 
 export async function writeSection(p: ProductBrief, outline: ProductOutline, index: number): Promise<ProductSection> {
   const target = outline.sections[index];
-  if (fixtureMode()) return fixture.section(target);
+  const kids = isKidsProduct(p);
+  if (fixtureMode()) {
+    const made = fixture.section(target);
+    return { ...made, pages: finishPages(made.pages, kids, index) };
+  }
   const out = await structured(
     sectionSchema,
     `You write complete, practical pages for printable digital products. Every page must be finished and usable: no placeholders, no "insert here", no filler. ${GUARD}`,
@@ -185,18 +195,46 @@ export async function writeSection(p: ProductBrief, outline: ProductOutline, ind
       "- fill: questions the reader answers by hand in `items` (prompts), with a `title`\n" +
       "- tip: one pro tip in `text`\n" +
       "- stuck: what to do if this step is not working, in `text`\n" +
+      (kids
+        ? `- drawing: a printable activity from our library. Put exactly one of these names in \`text\`: ${DRAWING_KINDS.join(", ")} (maze; dots-* are dot-to-dots; net-* are cut, fold and glue 3D paper models; draw-* teach drawing a 3D shape; color-* are colouring pictures), and a short, fun \`title\`.\n` +
+          "This product is for children: every page has exactly one drawing block, a different one on each page, plus 2 or 3 short blocks in simple words a child can read. Paragraphs are 1 or 2 sentences.\n"
+        : "") +
       "Unused fields are empty strings or empty arrays. Aim for 180 to 240 words per page: a half-empty page looks unfinished. Every page needs at least one block the reader writes on or ticks (steps, checklist, fill or template) and at least one tip or stuck block.",
     7000,
   );
   // Fill in omitted fields and drop blocks that came back with nothing in them.
-  const pages = out.pages.slice(0, 6).map((pg) => ({
-    heading: pg.heading,
-    goal: pg.goal ?? "",
-    blocks: pg.blocks
+  return { title: target.title, summary: target.summary, pages: finishPages(out.pages.slice(0, 6), kids, index) };
+}
+
+type RawPage = { heading: string; goal?: string | null; blocks: { type: string; title?: string | null; text?: string | null; items?: string[] | null }[] };
+
+/**
+ * Turns a model's pages into pages the PDF can draw: omitted fields filled in,
+ * empty blocks dropped, block types mapped. A children's product gets exactly
+ * one drawing on every page, each a different one, whether or not the model
+ * remembered to add it.
+ */
+export function finishPages(raw: RawPage[], kids: boolean, sectionIndex: number): ProductPage[] {
+  const used = new Set<DrawingKind>();
+  return raw.map((pg, j) => {
+    let blocks: Block[] = pg.blocks
       .map((b) => ({ type: blockType(b.type, Boolean(b.items?.length)), title: b.title ?? "", text: b.text ?? "", items: b.items ?? [] }))
-      .filter((b) => b.text.trim() || b.items.length),
-  }));
-  return { title: target.title, summary: target.summary, pages };
+      .filter((b) => b.type === "drawing" || b.text.trim() || b.items.length);
+    if (!kids) blocks = blocks.filter((b) => b.type !== "drawing");
+    else {
+      if (!blocks.some((b) => b.type === "drawing")) blocks.splice(Math.min(1, blocks.length), 0, { type: "drawing", title: "", text: "", items: [] });
+      const first = blocks.findIndex((b) => b.type === "drawing");
+      blocks = blocks.filter((b, n) => b.type !== "drawing" || n === first);
+      blocks = blocks.map((b) => {
+        if (b.type !== "drawing") return b;
+        let kind = drawingKind(`${b.text} ${b.title}`, sectionIndex * 4 + j);
+        for (let n = 0; used.has(kind) && n < DRAWING_KINDS.length; n++) kind = DRAWING_KINDS[(DRAWING_KINDS.indexOf(kind) + 1) % DRAWING_KINDS.length];
+        used.add(kind);
+        return { ...b, text: kind, items: [] };
+      });
+    }
+    return { heading: pg.heading, goal: pg.goal ?? "", blocks };
+  });
 }
 
 /* ───────────── Campaigns ───────────── */

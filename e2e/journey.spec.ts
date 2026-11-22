@@ -54,6 +54,10 @@ test("security headers are set", async ({ request }) => {
   expect((await request.get("/api/cron/daily")).status()).toBe(401);
   expect((await request.get("/api/cron/selftest")).status()).toBe(401);
   expect((await request.get("/api/videos")).status()).toBe(401);
+  expect((await request.get("/api/leads")).status()).toBe(401);
+  // The public lead form validates its input and needs explicit consent.
+  expect((await request.post("/api/leads/subscribe", { data: { productId: "x", email: "not-an-email", consent: true } })).status()).toBe(400);
+  expect((await request.post("/api/leads/subscribe", { data: { productId: "x", email: "a@example.test", consent: false } })).status()).toBe(400);
 });
 
 test("creator journey: idea → product → PDF → campaign → posts", async ({ page }) => {
@@ -186,7 +190,7 @@ test("returning user signs in and uses every remaining screen", async ({ page })
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.getByRole("heading", { name: "Getting started" })).toBeVisible();
-  await expect(page.getByText("3 of 4 done")).toBeVisible();
+  await expect(page.getByText("3 of 5 done")).toBeVisible();
   await shot(page, "13-overview-returning.png");
 
   // Theme switch persists across reloads.

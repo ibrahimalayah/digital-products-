@@ -1,22 +1,23 @@
 import Link from "next/link";
 import { eq, sql } from "drizzle-orm";
-import { ArrowRight, CalendarCheck, Check, FileText, Lightbulb, Megaphone, Wallet } from "lucide-react";
+import { ArrowRight, CalendarCheck, Check, Clapperboard, FileText, Lightbulb, Megaphone, Users } from "lucide-react";
 import { db, schema } from "@/db";
 import { requireUserPage } from "@/lib/session";
 import { getPlan } from "@/lib/plans";
 import { getUsage } from "@/lib/usage";
 import { listRuns } from "@/server/agents-log";
 import { publicSettings } from "@/server/settings";
+import { countLeads } from "@/server/leads";
 import { cn } from "@/lib/cn";
 import { Badge, Card, LinkButton, Meter, PageHeader, statusTone } from "@/components/ui";
-import { dateTime, money } from "@/lib/format";
+import { dateTime } from "@/lib/format";
 
 export default async function Overview() {
   const user = await requireUserPage();
   const plan = getPlan(user.plan);
   const one = (q: Promise<{ n: number }[]>) => q.then((r) => r[0].n);
   const n = sql<number>`count(*)::int`;
-  const [usage, products, campaigns, scheduled, budget, runs, ideas, settings] = await Promise.all([
+  const [usage, products, campaigns, scheduled, budget, runs, ideas, settings, videos, leads] = await Promise.all([
     getUsage(user.id),
     one(db.select({ n }).from(schema.products).where(eq(schema.products.userId, user.id))),
     one(db.select({ n }).from(schema.campaigns).where(eq(schema.campaigns.userId, user.id))),
@@ -30,26 +31,31 @@ export default async function Overview() {
     listRuns(user.id, 6),
     one(db.select({ n }).from(schema.ideas).where(eq(schema.ideas.userId, user.id))),
     publicSettings(user.id),
+    one(db.select({ n }).from(schema.videos).where(eq(schema.videos.userId, user.id))),
+    countLeads(user.id),
   ]);
 
   const next = [
     { href: "/app/ideas", icon: Lightbulb, title: "Research ideas", body: "Give the scout a niche and pick a winner." },
     { href: "/app/products", icon: FileText, title: "Build a product", body: "Generate every page and export the PDF." },
+    { href: "/app/videos", icon: Clapperboard, title: "Make a lead video", body: "A short vertical video that sends viewers to your product." },
     { href: "/app/campaigns", icon: Megaphone, title: "Launch a campaign", body: "Set a budget and let the agents post daily." },
   ];
   const stats = [
     { label: "Products", value: products, icon: FileText },
     { label: "Campaigns", value: campaigns, icon: Megaphone },
     { label: "Posts scheduled", value: scheduled, icon: CalendarCheck },
-    { label: "Planned budget", value: money(budget), icon: Wallet },
+    { label: "Leads", value: leads, icon: Users },
   ];
   const steps = [
     { done: ideas > 0, label: "Research your first idea", href: "/app/ideas" },
     { done: products > 0, label: "Create a product", href: ideas > 0 ? "/app/ideas" : "/app/products/new" },
+    { done: videos > 0, label: "Make a lead video", href: "/app/videos" },
     { done: campaigns > 0, label: "Plan a campaign", href: "/app/campaigns/new" },
     { done: settings.publisherConnected, label: "Connect Buffer to publish", href: "/app/settings" },
   ];
   const doneCount = steps.filter((s) => s.done).length;
+  const nextStep = steps.find((s) => !s.done);
 
   return (
     <>
@@ -63,11 +69,16 @@ export default async function Overview() {
                 {doneCount} of {steps.length} done
               </p>
             </div>
-            <div className="h-1.5 w-40 overflow-hidden rounded-full bg-sunken" role="progressbar" aria-label="Setup progress" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={steps.length}>
+            {nextStep ? (
+              <LinkButton href={nextStep.href} size="sm">
+                Next: {nextStep.label} <ArrowRight className="size-3.5" aria-hidden />
+              </LinkButton>
+            ) : null}
+            <div className="h-1.5 w-40 overflow-hidden rounded-full bg-sunken max-sm:hidden" role="progressbar" aria-label="Setup progress" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={steps.length}>
               <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
             </div>
           </div>
-          <ol className="grid sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="grid sm:grid-cols-2 lg:grid-cols-5">
             {steps.map((st, i) => (
               <li key={st.label} className="border-line max-lg:border-b lg:border-r lg:last:border-r-0">
                 <Link href={st.href} className="flex h-full items-center gap-3 px-6 py-4 text-sm transition-colors hover:bg-sunken">
@@ -137,7 +148,7 @@ export default async function Overview() {
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {next.map((item) => (
           <Link key={item.href} href={item.href} className="group lift rounded-2xl border border-line bg-surface p-5 hover:border-ink">
             <item.icon className="size-5 text-accent" aria-hidden />

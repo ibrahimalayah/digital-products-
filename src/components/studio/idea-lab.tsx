@@ -8,7 +8,7 @@ import { money } from "@/lib/format";
 
 export type Idea = { id: string; niche: string; title: string; promise: string; audience: string; format: string; proof: string; suggestedPriceCents: number };
 
-const examples = ["Debt and money stress", "New puppy owners", "First-time landlords", "Wedding planning on a budget"];
+const examples = ["Kids activity book, ages 5 to 8", "Debt and money stress", "New puppy owners", "First-time landlords", "Wedding planning on a budget"];
 
 export function IdeaLab({ initial, remaining }: { initial: Idea[]; remaining: number }) {
   const router = useRouter();

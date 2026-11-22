@@ -5,6 +5,7 @@ import { consume, refund } from "@/lib/usage";
 import { badRequest, forbidden, notFound } from "@/lib/errors";
 import { newId, slugify } from "@/lib/utils";
 import { logRun } from "./agents-log";
+import { getSettings } from "./settings";
 import type { CurrentUser } from "@/lib/session";
 
 export type Product = typeof schema.products.$inferSelect;
@@ -23,11 +24,13 @@ export type ProductInput = {
 export async function createProduct(user: CurrentUser, input: ProductInput): Promise<Product> {
   const id = newId("prod");
   const slug = `${slugify(input.title)}-${id.slice(-6).toLowerCase().replace(/[^a-z0-9]/g, "x")}`;
+  const settings = await getSettings(user.id);
   const [row] = await db
     .insert(schema.products)
     .values({
       id,
       userId: user.id,
+      language: settings.language,
       slug,
       title: input.title,
       promise: input.promise,
@@ -52,7 +55,7 @@ export function listProducts(userId: string) {
   return db.select().from(schema.products).where(eq(schema.products.userId, userId)).orderBy(desc(schema.products.createdAt)).limit(200);
 }
 
-const briefOf = (p: Product) => ({ title: p.title, promise: p.promise, audience: p.audience, format: p.format, tone: p.tone });
+const briefOf = (p: Product) => ({ title: p.title, promise: p.promise, audience: p.audience, format: p.format, tone: p.tone, language: p.language });
 
 /** Step 1 of generation. Consumes one monthly product credit. */
 export async function generateOutline(user: CurrentUser, id: string): Promise<Product> {

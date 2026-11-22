@@ -12,7 +12,7 @@ export default async function Settings() {
   return (
     <>
       <PageHeader eyebrow="Settings" title="Workspace settings" />
-      <SettingsForm initial={{ brandName: s.brandName, brandVoice: s.brandVoice, publisher: s.publisher, publisherConnected: s.publisherConnected }} />
+      <SettingsForm initial={{ brandName: s.brandName, brandVoice: s.brandVoice, language: s.language, publisher: s.publisher, publisherConnected: s.publisherConnected }} />
     </>
   );
 }

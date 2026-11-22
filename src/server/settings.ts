@@ -4,6 +4,7 @@ import { decrypt, encrypt } from "@/lib/crypto";
 import { getPlan } from "@/lib/plans";
 import { badRequest, limitReached } from "@/lib/errors";
 import { isPublisher, listChannels, type PublisherAuth, type PublisherKind } from "@/lib/publishers";
+import { isLanguage, type LanguageId } from "@/lib/languages";
 import type { CurrentUser } from "@/lib/session";
 
 export async function getSettings(userId: string) {
@@ -22,6 +23,7 @@ export async function publicSettings(userId: string) {
   return {
     brandName: s.brandName,
     brandVoice: s.brandVoice,
+    language: isLanguage(s.language) ? s.language : ("en" as LanguageId),
     autopilot: s.autopilot,
     autoApprove: s.autoApprove,
     publisher: (isPublisher(s.publisher) ? s.publisher : "buffer") as PublisherKind,
@@ -43,13 +45,14 @@ export async function getPublisher(userId: string): Promise<PublisherAuth | null
 
 export async function updateSettings(
   user: CurrentUser,
-  patch: { brandName?: string; brandVoice?: string; autopilot?: boolean; autoApprove?: boolean; publisher?: PublisherKind; publisherKey?: string | null },
+  patch: { brandName?: string; brandVoice?: string; language?: LanguageId; autopilot?: boolean; autoApprove?: boolean; publisher?: PublisherKind; publisherKey?: string | null },
 ) {
   const current = await getSettings(user.id);
   const plan = getPlan(user.plan);
   const set: Partial<typeof schema.settings.$inferInsert> = {};
   if (patch.brandName !== undefined) set.brandName = patch.brandName;
   if (patch.brandVoice !== undefined) set.brandVoice = patch.brandVoice;
+  if (patch.language !== undefined) set.language = patch.language;
   if (patch.autopilot !== undefined) {
     if (patch.autopilot && !plan.limits.autopilot) throw limitReached("Daily autopilot is available on Pro and Business.");
     set.autopilot = patch.autopilot;

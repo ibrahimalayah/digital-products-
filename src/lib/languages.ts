@@ -1,0 +1,237 @@
+// Languages the agents can write in, with the fixed labels the PDF prints.
+// All of these use the Latin alphabet, which the PDF's built-in fonts cover.
+
+export const LANGUAGES = [
+  { id: "en", name: "English" },
+  { id: "es", name: "Spanish" },
+  { id: "fr", name: "French" },
+  { id: "de", name: "German" },
+  { id: "pt", name: "Portuguese" },
+  { id: "it", name: "Italian" },
+  { id: "nl", name: "Dutch" },
+  { id: "sv", name: "Swedish" },
+  { id: "da", name: "Danish" },
+  { id: "no", name: "Norwegian" },
+] as const;
+
+export type LanguageId = (typeof LANGUAGES)[number]["id"];
+export const LANGUAGE_IDS = LANGUAGES.map((l) => l.id) as [LanguageId, ...LanguageId[]];
+export const isLanguage = (v: unknown): v is LanguageId => LANGUAGES.some((l) => l.id === v);
+export const languageName = (id: string) => LANGUAGES.find((l) => l.id === id)?.name ?? "English";
+
+export type Labels = {
+  welcome: string;
+  startHere: string;
+  howToUse: string;
+  contents: string;
+  inside: string;
+  extras: string;
+  goal: string;
+  tip: string;
+  stuck: string;
+  day: string;
+  of: string;
+  rights: string;
+  maze: string;
+  dots: string;
+  net: string;
+  draw: string;
+  color: string;
+};
+
+const en: Labels = {
+  welcome: "Welcome",
+  startHere: "Start here",
+  howToUse: "How to use this",
+  contents: "Contents",
+  inside: "What's inside",
+  extras: "Extras",
+  goal: "Goal",
+  tip: "Pro tip",
+  stuck: "If you're stuck",
+  day: "Day",
+  of: "of",
+  rights: "All rights reserved. For personal use only. Do not copy, share or resell.",
+  maze: "Find the way from the dot to the star.",
+  dots: "Join the dots in order, then colour your picture.",
+  net: "Cut on the solid lines, fold on the dashed lines, glue the tabs.",
+  draw: "Follow steps 1, 2 and 3, then draw your own on the dots.",
+  color: "Colour it in any way you like.",
+};
+
+const LABELS: Record<LanguageId, Labels> = {
+  en,
+  es: {
+    welcome: "Bienvenida",
+    startHere: "Empieza aquí",
+    howToUse: "Cómo usarlo",
+    contents: "Contenido",
+    inside: "Qué incluye",
+    extras: "Extras",
+    goal: "Objetivo",
+    tip: "Consejo",
+    stuck: "Si te atascas",
+    day: "Día",
+    of: "de",
+    rights: "Todos los derechos reservados. Solo para uso personal. No copiar, compartir ni revender.",
+    maze: "Encuentra el camino del punto a la estrella.",
+    dots: "Une los puntos en orden y colorea tu dibujo.",
+    net: "Corta por las líneas continuas, dobla por las discontinuas y pega las pestañas.",
+    draw: "Sigue los pasos 1, 2 y 3 y dibuja el tuyo sobre los puntos.",
+    color: "Coloréalo como más te guste.",
+  },
+  fr: {
+    welcome: "Bienvenue",
+    startHere: "Commencez ici",
+    howToUse: "Mode d'emploi",
+    contents: "Sommaire",
+    inside: "Ce qu'il contient",
+    extras: "Bonus",
+    goal: "Objectif",
+    tip: "Astuce",
+    stuck: "Si vous bloquez",
+    day: "Jour",
+    of: "sur",
+    rights: "Tous droits réservés. Usage personnel uniquement. Ne pas copier, partager ni revendre.",
+    maze: "Trouve le chemin du point jusqu'à l'étoile.",
+    dots: "Relie les points dans l'ordre, puis colorie ton dessin.",
+    net: "Découpe sur les traits pleins, plie sur les pointillés, colle les languettes.",
+    draw: "Suis les étapes 1, 2 et 3, puis dessine le tien sur les points.",
+    color: "Colorie comme tu veux.",
+  },
+  de: {
+    welcome: "Willkommen",
+    startHere: "Hier geht es los",
+    howToUse: "So nutzt du es",
+    contents: "Inhalt",
+    inside: "Was drin ist",
+    extras: "Extras",
+    goal: "Ziel",
+    tip: "Tipp",
+    stuck: "Wenn du feststeckst",
+    day: "Tag",
+    of: "von",
+    rights: "Alle Rechte vorbehalten. Nur für den persönlichen Gebrauch. Nicht kopieren, teilen oder weiterverkaufen.",
+    maze: "Finde den Weg vom Punkt zum Stern.",
+    dots: "Verbinde die Punkte der Reihe nach und male dein Bild aus.",
+    net: "An den durchgezogenen Linien schneiden, an den gestrichelten falten, Laschen kleben.",
+    draw: "Folge den Schritten 1, 2 und 3 und zeichne dann selbst auf den Punkten.",
+    color: "Male es aus, wie du möchtest.",
+  },
+  pt: {
+    welcome: "Boas-vindas",
+    startHere: "Comece aqui",
+    howToUse: "Como usar",
+    contents: "Conteúdo",
+    inside: "O que inclui",
+    extras: "Extras",
+    goal: "Objetivo",
+    tip: "Dica",
+    stuck: "Se ficar com dúvidas",
+    day: "Dia",
+    of: "de",
+    rights: "Todos os direitos reservados. Apenas para uso pessoal. Não copiar, partilhar nem revender.",
+    maze: "Encontra o caminho do ponto até à estrela.",
+    dots: "Liga os pontos pela ordem e pinta o teu desenho.",
+    net: "Corta pelas linhas contínuas, dobra pelas tracejadas e cola as abas.",
+    draw: "Segue os passos 1, 2 e 3 e desenha o teu sobre os pontos.",
+    color: "Pinta como quiseres.",
+  },
+  it: {
+    welcome: "Benvenuto",
+    startHere: "Inizia qui",
+    howToUse: "Come si usa",
+    contents: "Indice",
+    inside: "Cosa contiene",
+    extras: "Extra",
+    goal: "Obiettivo",
+    tip: "Consiglio",
+    stuck: "Se ti blocchi",
+    day: "Giorno",
+    of: "di",
+    rights: "Tutti i diritti riservati. Solo per uso personale. Non copiare, condividere o rivendere.",
+    maze: "Trova la strada dal punto alla stella.",
+    dots: "Unisci i puntini in ordine, poi colora il disegno.",
+    net: "Taglia sulle linee continue, piega su quelle tratteggiate, incolla le linguette.",
+    draw: "Segui i passi 1, 2 e 3, poi disegna il tuo sui puntini.",
+    color: "Colora come preferisci.",
+  },
+  nl: {
+    welcome: "Welkom",
+    startHere: "Begin hier",
+    howToUse: "Zo gebruik je het",
+    contents: "Inhoud",
+    inside: "Wat erin zit",
+    extras: "Extra's",
+    goal: "Doel",
+    tip: "Tip",
+    stuck: "Als je vastloopt",
+    day: "Dag",
+    of: "van",
+    rights: "Alle rechten voorbehouden. Alleen voor persoonlijk gebruik. Niet kopiëren, delen of doorverkopen.",
+    maze: "Zoek de weg van de stip naar de ster.",
+    dots: "Verbind de stippen op volgorde en kleur je tekening in.",
+    net: "Knip op de doorgetrokken lijnen, vouw op de stippellijnen, plak de lipjes.",
+    draw: "Volg stap 1, 2 en 3 en teken er daarna zelf een op de stippen.",
+    color: "Kleur het in zoals jij wilt.",
+  },
+  sv: {
+    welcome: "Välkommen",
+    startHere: "Börja här",
+    howToUse: "Så använder du den",
+    contents: "Innehåll",
+    inside: "Det här ingår",
+    extras: "Extra",
+    goal: "Mål",
+    tip: "Tips",
+    stuck: "Om du kör fast",
+    day: "Dag",
+    of: "av",
+    rights: "Alla rättigheter förbehållna. Endast för personligt bruk. Får inte kopieras, delas eller säljas vidare.",
+    maze: "Hitta vägen från pricken till stjärnan.",
+    dots: "Dra streck mellan prickarna i ordning och färglägg bilden.",
+    net: "Klipp längs de heldragna linjerna, vik längs de streckade och limma flikarna.",
+    draw: "Följ steg 1, 2 och 3 och rita sedan din egen på prickarna.",
+    color: "Färglägg precis som du vill.",
+  },
+  da: {
+    welcome: "Velkommen",
+    startHere: "Start her",
+    howToUse: "Sådan bruger du den",
+    contents: "Indhold",
+    inside: "Det får du",
+    extras: "Ekstra",
+    goal: "Mål",
+    tip: "Tip",
+    stuck: "Hvis du går i stå",
+    day: "Dag",
+    of: "af",
+    rights: "Alle rettigheder forbeholdes. Kun til personlig brug. Må ikke kopieres, deles eller videresælges.",
+    maze: "Find vejen fra prikken til stjernen.",
+    dots: "Forbind prikkerne i rækkefølge, og farvelæg tegningen.",
+    net: "Klip langs de fuldt optrukne linjer, fold langs de stiplede, og lim flapperne.",
+    draw: "Følg trin 1, 2 og 3, og tegn derefter din egen på prikkerne.",
+    color: "Farvelæg, som du har lyst.",
+  },
+  no: {
+    welcome: "Velkommen",
+    startHere: "Start her",
+    howToUse: "Slik bruker du den",
+    contents: "Innhold",
+    inside: "Dette får du",
+    extras: "Ekstra",
+    goal: "Mål",
+    tip: "Tips",
+    stuck: "Hvis du står fast",
+    day: "Dag",
+    of: "av",
+    rights: "Alle rettigheter forbeholdt. Kun til personlig bruk. Skal ikke kopieres, deles eller selges videre.",
+    maze: "Finn veien fra prikken til stjernen.",
+    dots: "Tegn strek mellom prikkene i rekkefølge, og fargelegg tegningen.",
+    net: "Klipp langs de hele linjene, brett langs de stiplede, og lim flikene.",
+    draw: "Følg trinn 1, 2 og 3, og tegn så din egen på prikkene.",
+    color: "Fargelegg akkurat som du vil.",
+  },
+};
+
+export const labelsFor = (id: string): Labels => (isLanguage(id) ? LABELS[id] : en);

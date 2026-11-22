@@ -2,12 +2,14 @@ import { z } from "zod";
 import { body, route } from "@/lib/api";
 import { requireUser } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
+import { LANGUAGE_IDS } from "@/lib/languages";
 import { publicSettings, updateSettings } from "@/server/settings";
 
 const patch = z
   .object({
     brandName: z.string().trim().max(80),
     brandVoice: z.string().trim().max(600),
+    language: z.enum(LANGUAGE_IDS),
     autopilot: z.boolean(),
     autoApprove: z.boolean(),
     publisher: z.enum(["buffer", "postiz"]),

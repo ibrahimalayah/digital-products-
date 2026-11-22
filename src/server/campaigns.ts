@@ -112,6 +112,7 @@ async function briefFor(userId: string, c: Campaign): Promise<CampaignBrief> {
       audience: p.audience,
       format: p.format,
       tone: p.tone,
+      language: p.language,
       priceUsd: p.priceCents / 100,
       url: p.status === "published" ? `${appUrl()}/store/${p.slug}` : appUrl(),
     },

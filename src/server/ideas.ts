@@ -12,7 +12,7 @@ export async function runIdeaResearch(user: CurrentUser, niche: string) {
   await consume(user, "ideas");
   try {
     const s = await getSettings(user.id);
-    const drafts = await researchIdeas(niche, s.brandVoice);
+    const drafts = await researchIdeas(niche, s.brandVoice, s.language);
     const rows = drafts.map((d) => ({
       id: newId("idea"),
       userId: user.id,

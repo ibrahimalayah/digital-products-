@@ -10,6 +10,7 @@ const PUBLIC = new Map([
   ["stripe/webhook", "verified by Stripe signature"],
   ["cron/daily", "verified by CRON_SECRET"],
   ["health", "liveness probe, returns no data"],
+  ["leads/subscribe", "public lead form: same-origin, rate-limited, consent required, reveals nothing"],
 ]);
 
 function routeFiles(dir: string, out: string[] = []): string[] {

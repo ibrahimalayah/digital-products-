@@ -102,6 +102,8 @@ export const settings = pgTable("settings", {
     .references(() => user.id, { onDelete: "cascade" }),
   brandName: text("brand_name").default("").notNull(),
   brandVoice: text("brand_voice").default("").notNull(),
+  // Language the agents write in (see src/lib/languages.ts).
+  language: text("language").default("en").notNull(),
   // Which publishing service the creator connected: "buffer" | "postiz".
   publisher: text("publisher").default("buffer").notNull(),
   // AES-256-GCM ciphertext of that service's API key. Never returned to the client.
@@ -149,6 +151,7 @@ export const products = pgTable(
     audience: text("audience").notNull(),
     format: text("format").notNull(),
     tone: text("tone").default("warm, friendly and easy to read").notNull(),
+    language: text("language").default("en").notNull(),
     pageSize: text("page_size").default("LETTER").notNull(), // "LETTER" | "A4"
     accent: text("accent").default("#1f6f5c").notNull(),
     priceCents: integer("price_cents").default(900).notNull(),
@@ -283,6 +286,23 @@ export const rateLimits = pgTable(
     count: integer("count").default(0).notNull(),
   },
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
+);
+
+// People who asked to hear more about a product on its store page.
+export const leads = pgTable(
+  "leads",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }), // the product's owner
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("leads_product_email_idx").on(t.productId, t.email), index("leads_user_idx").on(t.userId, t.createdAt)],
 );
 
 // Short vertical lead videos. Only the script is stored; the video file is

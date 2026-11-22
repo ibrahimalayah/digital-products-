@@ -6,6 +6,7 @@ import { db, schema } from "@/db";
 import { requireUserPage } from "@/lib/session";
 import { integrations } from "@/lib/env";
 import { ProductStudio } from "@/components/studio/product-studio";
+import { Card, LinkButton } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Product" };
 
@@ -38,6 +39,20 @@ export default async function ProductDetail({ params }: { params: Promise<{ id: 
           sections: p.sections,
         }}
       />
+      {p.status === "ready" || p.status === "published" ? (
+        <Card className="mt-8 flex flex-wrap items-center justify-between gap-4 p-6">
+          <div>
+            <h2 className="font-display text-2xl">Now bring people to it</h2>
+            <p className="mt-1 text-sm text-muted">Your product is finished. A short video and a daily posting plan are the two fastest ways to get it seen.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <LinkButton href={`/app/videos?product=${p.id}`}>Make a lead video</LinkButton>
+            <LinkButton href={`/app/campaigns/new?product=${p.id}`} variant="secondary">
+              Plan a campaign
+            </LinkButton>
+          </div>
+        </Card>
+      ) : null}
     </>
   );
 }

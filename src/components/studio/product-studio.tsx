@@ -6,6 +6,7 @@ import { api, errorMessage } from "@/lib/client";
 import { AButton, Badge, Button, Card, Field, Input, LinkButton, Notice, Select, Textarea, statusTone } from "@/components/ui";
 import { ProductCover } from "@/components/product-cover";
 import type { Block, ProductOutline, ProductSection } from "@/lib/types";
+import { Drawing } from "@/components/drawing";
 import { cn } from "@/lib/cn";
 
 export type StudioProduct = {
@@ -27,6 +28,14 @@ export type StudioProduct = {
 const ACCENTS = ["#17604f", "#1d3f72", "#8a2f3b", "#a0611a", "#4a3a7a", "#1b1a17"];
 
 function BlockPreview({ b }: { b: Block }) {
+  if (b.type === "drawing") {
+    return (
+      <div>
+        {b.title ? <p className="text-[13px] font-semibold">{b.title}</p> : null}
+        <Drawing kind={b.text} seed={b.title} className="mt-1.5 w-full max-w-[260px] rounded-lg border border-line" />
+      </div>
+    );
+  }
   if (b.type === "steps" || b.type === "checklist" || b.type === "fill") {
     return (
       <div>

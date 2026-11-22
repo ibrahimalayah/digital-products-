@@ -7,6 +7,7 @@ import { getStoreProduct } from "@/server/products";
 import { getUser } from "@/lib/session";
 import { ProductCover } from "@/components/product-cover";
 import { BuyButton } from "@/components/buy-button";
+import { LeadForm } from "@/components/lead-form";
 import { AButton } from "@/components/ui";
 import { money } from "@/lib/format";
 
@@ -65,6 +66,12 @@ export default async function ProductPage({ params }: Props) {
           </div>
           <p className="mt-3 text-center text-xs text-muted">Secure checkout by Stripe. Instant download after payment.</p>
         </div>
+
+        {owned ? null : (
+          <div className="mt-4">
+            <LeadForm productId={p.id} />
+          </div>
+        )}
 
         <h2 className="mt-12 font-display text-3xl">What&apos;s inside</h2>
         <ol className="mt-5 space-y-5">

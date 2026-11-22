@@ -14,14 +14,15 @@ export type Video = typeof schema.videos.$inferSelect;
 
 export type VideoInput = { productId: string; seconds: number; goal: "leads" | "sales"; voice: string };
 
-/** Writes the script for a short lead video. Consumes one monthly video credit. */
+/** Writes the script for a short lead video. Consumes one monthly video credit.
+ * The built-in voice speaks English only, so other languages start as captions-only. */
 export async function createVideo(user: CurrentUser, input: VideoInput): Promise<Video> {
   const p = await getOwnedProduct(user.id, input.productId);
   await consume(user, "videos");
   try {
     const s = await getSettings(user.id);
     const { title, script } = await writeVideoScript({
-      product: { title: p.title, promise: p.promise, audience: p.audience, format: p.format, tone: p.tone, priceUsd: p.priceCents / 100 },
+      product: { title: p.title, promise: p.promise, audience: p.audience, format: p.format, tone: p.tone, language: p.language, priceUsd: p.priceCents / 100 },
       goal: input.goal,
       seconds: input.seconds,
       brandVoice: s.brandVoice,
@@ -29,7 +30,7 @@ export async function createVideo(user: CurrentUser, input: VideoInput): Promise
     if (script.scenes.length < 2) throw badRequest("The script came back empty. Try again.");
     const [row] = await db
       .insert(schema.videos)
-      .values({ id: newId("vid"), userId: user.id, productId: p.id, title, goal: input.goal, seconds: input.seconds, voice: input.voice, script })
+      .values({ id: newId("vid"), userId: user.id, productId: p.id, title, goal: input.goal, seconds: input.seconds, voice: p.language === "en" ? input.voice : "none", script })
       .returning();
     await logRun(user.id, "video-writer", "ok", `Wrote a ${input.seconds}-second video script for "${p.title.slice(0, 60)}".`);
     return row;

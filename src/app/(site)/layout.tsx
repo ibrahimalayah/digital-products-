@@ -80,7 +80,12 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         </div>
         <div className="border-t border-line">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-            <p className="text-xs text-muted">Products are educational material, not professional advice.</p>
+            <p className="text-xs text-muted">
+              Products are educational material, not professional advice.{" "}
+              <Link href="/terms" className="underline hover:text-ink">
+                Terms, rights and privacy
+              </Link>
+            </p>
             <ThemeToggle />
           </div>
         </div>

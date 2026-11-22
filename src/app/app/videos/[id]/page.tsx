@@ -25,6 +25,7 @@ export default async function VideoDetail({ params }: { params: Promise<{ id: st
       <VideoStudio
         video={{ id: video.id, title: video.title, voice: video.voice, scenes: video.script.scenes }}
         product={{ title: product.title, accent: product.accent, published: product.status === "published" }}
+        english={product.language === "en"}
         brand={settings.brandName || "Kitforge"}
         link={new URL(appUrl()).host}
         cta={`Get it · ${money(product.priceCents)}`}

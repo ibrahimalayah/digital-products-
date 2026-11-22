@@ -15,11 +15,13 @@ type Result = { url: string; ext: string; mb: string };
 export function VideoStudio({
   video,
   product,
+  english,
   brand,
   link,
   cta,
   postText,
 }: {
+  english: boolean;
   video: { id: string; title: string; voice: string; scenes: VideoScene[] };
   product: { title: string; accent: string; published: boolean };
   brand: string;
@@ -35,7 +37,7 @@ export function VideoStudio({
   const stopper = useRef<AbortController | null>(null);
 
   const [scenes, setScenes] = useState(video.scenes);
-  const [voice, setVoice] = useState(video.voice);
+  const [voice, setVoice] = useState(english ? video.voice : "none");
   const [presenter, setPresenter] = useState<Presenter | null>(null);
   const [phase, setPhase] = useState<"idle" | "voice" | "preview" | "recording">("idle");
   const [status, setStatus] = useState("");
@@ -287,11 +289,11 @@ export function VideoStudio({
             )}
           </div>
           <div className="mt-5 max-w-sm">
-            <Field label="Voice" htmlFor="voice" hint="Kokoro, an open-source voice that runs in your browser. Videos are marked “AI voice”.">
+            <Field label="Voice" htmlFor="voice" hint={english ? "Kokoro, an open-source voice that runs in your browser. Videos are marked “AI voice”." : "The built-in voice speaks English only, so this video uses captions. Record your own voice-over in your phone's editor if you want sound."}>
               <Select
                 id="voice"
-                value={voice}
-                disabled={busy}
+                value={english ? voice : "none"}
+                disabled={busy || !english}
                 onChange={(e) => {
                   setVoice(e.target.value);
                   setSaved(false);

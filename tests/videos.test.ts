@@ -6,6 +6,9 @@ import { blockType, normaliseVideo, wordsFor } from "@/lib/ai";
 import { chainProviders, completeJson, waitSeconds } from "@/lib/ai-chain";
 import { envelope, mix, sceneAt, timeline } from "@/lib/video-render";
 import { getUsage } from "@/lib/usage";
+import { addLead, countLeads, deleteLead, leadsCsv, listLeads } from "@/server/leads";
+import { db, schema } from "@/db";
+import { eq } from "drizzle-orm";
 import { makeUser } from "./helpers";
 
 const brief = { title: "Puppy Potty Plan", promise: "A calm, house-trained puppy in 28 days.", audience: "New puppy owners", format: "4 weekly guides and a tracker" };
@@ -176,5 +179,31 @@ describe("keyless last resort", () => {
     const out = await completeJson(schema, "s", "p", 100, [{ name: "keyless", baseUrl: "https://keyless.test", key: "", model: "m" }]);
     expect(out).toMatchObject({ ok: true, provider: "keyless" });
     expect(seen).toEqual([null, null]);
+  });
+});
+
+describe("leads", () => {
+  it("collects emails for published products only, once each, for the owner alone", async () => {
+    const owner = await makeUser();
+    const other = await makeUser();
+    const p = await createProduct(owner, brief);
+    await addLead(p.id, "Early@Example.test"); // not published yet
+    expect(await countLeads(owner.id)).toBe(0);
+    await db.update(schema.products).set({ status: "published" }).where(eq(schema.products.id, p.id));
+    await addLead(p.id, "Fan@Example.test");
+    await addLead(p.id, "fan@example.test");
+    await addLead("no-such-product", "x@example.test");
+    const rows = await listLeads(owner.id);
+    expect(rows.map((r) => r.email)).toEqual(["fan@example.test"]);
+    expect(await listLeads(other.id)).toHaveLength(0);
+    await deleteLead(other.id, rows[0].id);
+    expect(await countLeads(owner.id)).toBe(1);
+    await deleteLead(owner.id, rows[0].id);
+    expect(await countLeads(owner.id)).toBe(0);
+  });
+
+  it("writes a CSV that a spreadsheet cannot run as a formula", () => {
+    const csv = leadsCsv([{ id: "1", email: "=cmd@example.test", productTitle: 'The "Big" Kit', createdAt: new Date("2026-11-22T10:00:00Z") }]);
+    expect(csv).toBe('email,product,signed_up\r\n"\'=cmd@example.test","The ""Big"" Kit","2026-11-22T10:00:00.000Z"\r\n');
   });
 });

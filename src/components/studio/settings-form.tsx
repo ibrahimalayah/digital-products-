@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, errorMessage } from "@/lib/client";
-import { Badge, Button, Card, Field, Input, Notice, Textarea } from "@/components/ui";
+import { Badge, Button, Card, Field, Input, Notice, Textarea, Select } from "@/components/ui";
+import { LANGUAGES } from "@/lib/languages";
 import { cn } from "@/lib/cn";
 
 type Kind = "buffer" | "postiz";
-type Settings = { brandName: string; brandVoice: string; publisher: Kind; publisherConnected: boolean };
+type Settings = { brandName: string; brandVoice: string; language: string; publisher: Kind; publisherConnected: boolean };
 
 // Kept in step with src/lib/publishers.ts, which the server uses.
 const SERVICES: Record<Kind, { name: string; tag: string; summary: string; keyHelp: string; link: string }> = {
@@ -62,7 +63,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
-            void patch("brand", { brandName: String(f.get("brandName") ?? "").trim(), brandVoice: String(f.get("brandVoice") ?? "").trim() }, "Brand saved.");
+            void patch("brand", { brandName: String(f.get("brandName") ?? "").trim(), brandVoice: String(f.get("brandVoice") ?? "").trim(), language: String(f.get("language") ?? "en") }, "Brand saved.");
           }}
         >
           <Field label="Brand name" htmlFor="brandName">
@@ -70,6 +71,15 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           </Field>
           <Field label="Brand voice" htmlFor="brandVoice" hint="A sentence or two. Example: plain-spoken, encouraging, never salesy.">
             <Textarea id="brandVoice" name="brandVoice" defaultValue={s.brandVoice} maxLength={600} rows={3} />
+          </Field>
+          <Field label="Language" htmlFor="language" hint="Ideas, products, posts and video scripts are written in this language. New products keep the language they were made in.">
+            <Select id="language" name="language" defaultValue={s.language}>
+              {LANGUAGES.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </Select>
           </Field>
           {msg?.at === "brand" ? <Notice tone={msg.tone}>{msg.text}</Notice> : null}
           <Button type="submit" variant="secondary" loading={busy === "brand"}>

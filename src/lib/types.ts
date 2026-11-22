@@ -1,6 +1,7 @@
-export type BlockType = "paragraph" | "steps" | "checklist" | "tip" | "stuck" | "template" | "fill";
+export type BlockType = "paragraph" | "steps" | "checklist" | "tip" | "stuck" | "template" | "fill" | "drawing";
 
-/** One printable building block. `items` is used by steps/checklist/fill; `text` by the rest. */
+/** One printable building block. `items` is used by steps/checklist/fill; `text` by the rest.
+ * For a drawing, `text` names the built-in activity (see src/lib/drawings.ts). */
 export type Block = { type: BlockType; title: string; text: string; items: string[] };
 
 export type ProductPage = { heading: string; goal: string; blocks: Block[] };
