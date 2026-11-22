@@ -19,7 +19,9 @@ export async function GET(req: Request) {
   try {
     await dbReady();
     const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.videos);
-    report.database = { ok: true, videosTable: true, videos: row.n };
+    const [leads] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.leads);
+    const [lang] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.products).where(sql`${schema.products.language} is not null`);
+    report.database = { ok: true, videos: row.n, leads: leads.n, productsWithLanguage: lang.n };
   } catch (e) {
     report.database = { ok: false, error: (e as Error).message.slice(0, 120) };
   }

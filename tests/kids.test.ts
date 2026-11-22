@@ -80,8 +80,22 @@ describe("children's drawings", () => {
       pageSize: "A4",
       accent: "#1d3f72",
       outline: null,
-      // Real sections hold at most six pages, so the drawings are spread over three.
-      sections: [0, 5, 10].map((from, n) => ({ title: `Activities ${n + 1}`, summary: "Drawings", pages: pages.slice(from, from + 5) })),
+      // Each page also carries the text blocks a real page has, so some spill onto a second sheet.
+      sections: [
+        {
+          title: "Activities",
+          summary: "All drawings",
+          pages: pages.map((pg) => ({
+            ...pg,
+            blocks: [
+              { type: "paragraph" as const, title: "", text: "Read this first. ".repeat(12), items: [] },
+              ...pg.blocks,
+              { type: "fill" as const, title: "Your turn", text: "", items: ["What did you find?", "What will you make next?", "Who will you show?"] },
+              { type: "tip" as const, title: "", text: "Take your time.", items: [] },
+            ],
+          })),
+        },
+      ],
       brand: "Kitforge",
       language: "sv",
     });

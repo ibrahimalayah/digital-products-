@@ -70,7 +70,7 @@ function ShapeView({ sh }: { sh: Shape }) {
 
 function DrawingView({ b, L }: { b: Block; L: Labels }) {
   const d = makeDrawing(drawingKind(b.text), b.title);
-  const size = d.family === "net" ? 450 : 410;
+  const size = d.family === "net" ? 440 : 370;
   return (
     <View style={s.block} wrap={false}>
       {b.title ? <Text style={s.blockTitle}>{b.title}</Text> : null}
@@ -258,32 +258,34 @@ export function ProductDocument({ p }: { p: PdfProduct }) {
         <Footer title={p.title} />
       </Page>
 
-      {p.sections.filter(Boolean).map((sec, i) => (
+      {/* One PDF page per product page: a single long flowing section overflows the renderer. */}
+      {p.sections.filter(Boolean).flatMap((sec, i) => [
         <Page key={`s${i}`} size={size} style={s.page}>
-          <View style={s.divider} break={false}>
+          <View style={s.divider}>
             <Text style={[s.bigNum, { color: accent }]}>{String(i + 1).padStart(2, "0")}</Text>
             <Text style={[s.h1, { marginTop: 12 }]}>{sec.title}</Text>
             <Text style={{ color: MUTED, fontSize: 12, maxWidth: 360 }}>{sec.summary}</Text>
           </View>
-          {sec.pages.map((pg, j) => (
-            <View key={j} break>
-              <Text style={[s.eyebrow, { color: accent }]}>
-                {sec.title} · {j + 1} {L.of} {sec.pages.length}
-              </Text>
-              <Text style={s.h2}>{pg.heading}</Text>
-              {pg.goal ? (
-                <Text style={s.goal}>
-                  {L.goal}: {pg.goal}
-                </Text>
-              ) : null}
-              {pg.blocks.map((b, k) => (
-                <BlockView key={k} b={b} accent={accent} L={L} />
-              ))}
-            </View>
-          ))}
           <Footer title={p.title} />
-        </Page>
-      ))}
+        </Page>,
+        ...sec.pages.map((pg, j) => (
+          <Page key={`s${i}p${j}`} size={size} style={s.page}>
+            <Text style={[s.eyebrow, { color: accent }]}>
+              {sec.title} · {j + 1} {L.of} {sec.pages.length}
+            </Text>
+            <Text style={s.h2}>{pg.heading}</Text>
+            {pg.goal ? (
+              <Text style={s.goal}>
+                {L.goal}: {pg.goal}
+              </Text>
+            ) : null}
+            {pg.blocks.map((b, k) => (
+              <BlockView key={k} b={b} accent={accent} L={L} />
+            ))}
+            <Footer title={p.title} />
+          </Page>
+        )),
+      ])}
 
       {(o?.extras ?? []).map((e, i) => (
         <Page key={`e${i}`} size={size} style={s.page}>
