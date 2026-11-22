@@ -31,6 +31,11 @@ test("public pages render and protect the studio", async ({ page }) => {
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fapp/);
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/sign-in/);
+  // Search engines get a sitemap and are kept out of the private areas.
+  const robots = await (await page.request.get("/robots.txt")).text();
+  expect(robots).toContain("Disallow: /app");
+  expect(robots).toContain("/sitemap.xml");
+  expect(await (await page.request.get("/sitemap.xml")).text()).toContain("/store</loc>");
   expect(errors).toEqual([]);
 });
 
@@ -177,15 +182,20 @@ test("creator journey: idea → product → PDF → campaign → posts", async (
   await expect(page.getByRole("link", { name: "Download your PDF" })).toBeVisible(); // owner already has access
   await shot(page, "09-store-product.png");
 
-  // Sign out; a visitor sees the buy button and is sent to sign up.
+  // Sign out and look at the product as a visitor.
   await page.goto("/app");
   await page.getByRole("complementary").getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto("/store");
   await shot(page, "10-store.png");
   await page.getByRole("link", { name: /puppy training Starter Kit 1/ }).click();
-  await page.getByRole("button", { name: /Buy for/ }).click();
-  await expect(page).toHaveURL(/\/sign-up\?next=/);
+  // Payments are not connected in this test, so the product is shown as an example
+  // with a free preview, tags and a way to make one like it (which needs an account).
+  await expect(page.getByRole("heading", { name: "Free preview" })).toBeVisible();
+  await expect(page.getByLabel("Tags").getByText("#printables")).toBeVisible();
+  await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(1);
+  await page.getByRole("link", { name: "Make one like this" }).click();
+  await expect(page).toHaveURL(/\/sign-in\?next=/);
   // The PDF is not downloadable without a session.
   expect((await page.request.get(`/api/products/${productId}/pdf`)).status()).toBe(401);
 

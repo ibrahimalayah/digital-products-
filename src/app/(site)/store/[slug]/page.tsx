@@ -10,7 +10,11 @@ import { BuyButton } from "@/components/buy-button";
 import { LeadForm } from "@/components/lead-form";
 import { Drawing } from "@/components/drawing";
 import { isRtl } from "@/lib/languages";
-import { AButton } from "@/components/ui";
+import { appUrl, integrations } from "@/lib/env";
+import { ldJson, productJsonLd, productTags } from "@/lib/seo";
+import { getSettings } from "@/server/settings";
+import Link from "next/link";
+import { AButton, LinkButton } from "@/components/ui";
 import { money } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +24,16 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   await dbReady();
   const p = await getStoreProduct((await params).slug);
-  return p ? { title: p.title, description: p.promise } : { title: "Not found" };
+  if (!p) return { title: "Not found" };
+  const tags = productTags(p);
+  return {
+    title: p.title,
+    description: `${p.promise} ${p.format}.`.slice(0, 300),
+    keywords: [p.title, ...tags],
+    alternates: { canonical: `/store/${p.slug}` },
+    openGraph: { title: p.title, description: p.promise, type: "website", url: `/store/${p.slug}`, locale: p.language },
+    twitter: { card: "summary", title: p.title, description: p.promise },
+  };
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -40,6 +53,9 @@ export default async function ProductPage({ params }: Props) {
   const pages = p.sections.filter(Boolean).reduce((n, s) => n + s.pages.length, 0);
   const sample = p.sections.filter(Boolean)[0]?.pages[0];
   const dir = isRtl(p.language) ? "rtl" : undefined;
+  const tags = productTags(p);
+  const brand = (await getSettings(p.userId)).brandName || "Kitforge";
+  const storeOpen = integrations.stripe();
 
   return (
     <div className="mx-auto grid max-w-6xl gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,380px)_1fr]">
@@ -47,6 +63,7 @@ export default async function ProductPage({ params }: Props) {
         <ProductCover title={p.title} subtitle={p.outline?.subtitle || p.promise} accent={p.accent} />
       </div>
       <div dir={dir}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(productJsonLd(p, `${appUrl()}/store/${p.slug}`, brand)) }} />
         <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">{p.format}</p>
         <h1 className="font-display text-5xl leading-none tracking-tight sm:text-6xl">{p.title}</h1>
         <p className="mt-5 text-xl leading-relaxed">{p.promise}</p>
@@ -64,11 +81,31 @@ export default async function ProductPage({ params }: Props) {
               <AButton href={`/api/products/${p.id}/pdf`} size="lg" className="w-full">
                 <Download className="size-4" aria-hidden /> Download your PDF
               </AButton>
-            ) : (
+            ) : storeOpen ? (
               <BuyButton slug={p.slug} label={`Buy for ${money(p.priceCents)}`} signedIn={Boolean(user)} />
+            ) : (
+              <LinkButton href={`/app/ideas?niche=${encodeURIComponent(p.title)}`} size="lg" className="w-full">
+                Make one like this
+              </LinkButton>
             )}
           </div>
-          <p className="mt-3 text-center text-xs text-muted">Secure checkout by Stripe. Instant download after payment.</p>
+          <p className="mt-3 text-center text-xs text-muted" dir="ltr">
+            {storeOpen ? "Secure checkout by Stripe. Instant download after payment." : "This is an example made in the studio. Checkout is not open yet; read the free preview below or make your own."}
+          </p>
+          <ul className="mt-4 flex flex-wrap justify-center gap-1.5" aria-label="Tags" dir="ltr">
+            {tags.map((t) => (
+              <li key={t} className="rounded-full bg-sunken px-2.5 py-1 font-mono text-[11px] text-muted">
+                #{t}
+              </li>
+            ))}
+          </ul>
+          {storeOpen && !owned ? (
+            <p className="mt-3 text-center text-xs" dir="ltr">
+              <Link href={`/app/ideas?niche=${encodeURIComponent(p.title)}`} className="text-muted underline hover:text-ink">
+                Make one like this in the studio
+              </Link>
+            </p>
+          ) : null}
         </div>
 
         {owned ? null : (

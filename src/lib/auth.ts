@@ -7,6 +7,8 @@ import { appUrl, authSecret } from "./env";
 const create = () =>
   betterAuth({
   baseURL: appUrl(),
+  // The site answers on its main address and on the addresses Vercel assigns.
+  trustedOrigins: [appUrl(), process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`, process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`, "https://digital-products-zeta.vercel.app"].filter((o): o is string => Boolean(o)),
   secret: authSecret(),
   database: drizzleAdapter(db, {
     provider: "pg",

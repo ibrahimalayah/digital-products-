@@ -10,10 +10,10 @@ export type Idea = { id: string; niche: string; title: string; promise: string; 
 
 const examples = ["Kids activity book, ages 5 to 8", "Debt and money stress", "New puppy owners", "First-time landlords", "Wedding planning on a budget"];
 
-export function IdeaLab({ initial, remaining }: { initial: Idea[]; remaining: number }) {
+export function IdeaLab({ initial, remaining, startNiche = "" }: { initial: Idea[]; remaining: number; startNiche?: string }) {
   const router = useRouter();
   const [ideas, setIdeas] = useState(initial);
-  const [niche, setNiche] = useState("");
+  const [niche, setNiche] = useState(startNiche);
   const [busy, setBusy] = useState(false);
   const [building, setBuilding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

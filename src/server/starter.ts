@@ -208,3 +208,6 @@ export async function addStarterProduct(owner: CurrentUser) {
     .returning();
   return row;
 }
+
+/** The starter product with its pages, for the example shelf in the public store. */
+export const STARTER_FULL = { ...STARTER, outline, sections };

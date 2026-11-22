@@ -8,6 +8,11 @@ import { cn } from "@/lib/cn";
 import { isRtl } from "@/lib/languages";
 import { siteText } from "@/lib/locale";
 import { currentLanguage } from "@/lib/locale-server";
+import { appUrl } from "@/lib/env";
+import { ldJson, siteJsonLd } from "@/lib/seo";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const kinds = ["Template packs", "Planners", "Workbooks", "Checklists", "Letter kits", "Call scripts", "Trackers", "Swipe files", "Budget sheets", "Meal plans", "Study guides", "Launch kits"];
 
@@ -101,6 +106,9 @@ export default async function Home() {
   const dir = isRtl(lang) ? "rtl" : undefined;
   return (
     <>
+      {siteJsonLd(appUrl()).map((d, i) => (
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(d) }} />
+      ))}
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-line">
         <div className="grain absolute inset-0 opacity-60" aria-hidden />

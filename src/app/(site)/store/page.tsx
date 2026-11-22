@@ -9,7 +9,11 @@ import { money } from "@/lib/format";
 import { BRAND } from "@/lib/brand.generated";
 import { cn } from "@/lib/cn";
 
-export const metadata: Metadata = { title: "Store" };
+export const metadata: Metadata = {
+  title: "Store: printable digital products",
+  description: "Printable planners, kits, workbooks and kids' activity books, ready to download as PDF. Browse examples made in the Kitforge studio.",
+  alternates: { canonical: "/store" },
+};
 export const dynamic = "force-dynamic";
 
 export default async function Store() {

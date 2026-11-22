@@ -7,6 +7,11 @@ import { renderProductPdf } from "@/lib/pdf";
 import { createProduct, generateOutline, generateSection } from "@/server/products";
 import { updateSettings } from "@/server/settings";
 import { pickLanguage, siteText } from "@/lib/locale";
+import { ldJson, productJsonLd, productTags } from "@/lib/seo";
+import { EXAMPLES, exampleSlug, seedShowcase } from "@/server/showcase";
+import { listStore } from "@/server/products";
+import { db, schema } from "@/db";
+import { eq } from "drizzle-orm";
 import { makeUser } from "./helpers";
 
 describe("children's drawings", () => {
@@ -195,5 +200,45 @@ describe("choosing a visitor's language", () => {
       expect(t.title, l.id).toHaveLength(3);
       expect(t.sub.length, l.id).toBeGreaterThan(40);
     }
+  });
+});
+
+describe("search engines", () => {
+  it("derives hashtags from what a product is", () => {
+    expect(productTags({ title: "Sunday Meal Prep Kit", audience: "Busy parents", format: "A weekly planner and a shopping checklist" })).toEqual(["printables", "digitalproducts", "planner", "checklist", "sunday", "meal", "prep", "pdfdownload"]);
+    const kids = productTags({ title: "Ocean Friends Activity Book", audience: "Kids aged 5 to 8", format: "mazes and colouring" });
+    expect(kids.slice(0, 2)).toEqual(["kidsactivities", "printables"]);
+    expect(kids).toContain("coloringpages");
+    expect(kids.every((t) => /^[\p{L}\p{N}]+$/u.test(t))).toBe(true);
+  });
+
+  it("describes a product to search engines without letting content break out of the tag", () => {
+    const data = productJsonLd({ title: "A </script> kit", promise: "p", audience: "a", format: "f", priceCents: 1250, language: "en" }, "https://example.test/store/x", "Brand");
+    expect(data).toMatchObject({ "@type": "Product", offers: { price: "12.50", priceCurrency: "USD" } });
+    expect(ldJson(data)).not.toContain("</script>");
+  });
+});
+
+describe("example products in the store", () => {
+  it("gives every example a distinct, stable address", () => {
+    const slugs = EXAMPLES.map(exampleSlug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+    expect(exampleSlug({ title: "مستكشفو الفضاء", language: "ar" })).toMatch(/^ar-kit-[0-9a-f]{6}$/);
+    expect(exampleSlug({ title: "Sunday Meal Prep Kit" })).toMatch(/^sunday-meal-prep-kit-[0-9a-f]{6}$/);
+  });
+
+  it("publishes the examples once, then hands them to the owner when there is one", async () => {
+    const first = await seedShowcase();
+    expect(first.added).toHaveLength(EXAMPLES.length);
+    expect(first.owner).toContain("placeholder");
+    const again = await seedShowcase();
+    expect(again.added).toHaveLength(0);
+    expect((await listStore()).length).toBeGreaterThanOrEqual(EXAMPLES.length);
+    const admin = await makeUser({ role: "admin" });
+    const handed = await seedShowcase();
+    expect(handed.owner).toBe("site owner");
+    expect(handed.movedToOwner).toBe(EXAMPLES.length);
+    const rows = await db.select({ userId: schema.products.userId }).from(schema.products).where(eq(schema.products.status, "published"));
+    expect(rows.every((r) => r.userId === admin.id)).toBe(true);
   });
 });
