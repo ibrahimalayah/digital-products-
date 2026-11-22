@@ -5,6 +5,9 @@ import { PLANS, PLAN_ORDER } from "@/lib/plans";
 import { BRAND } from "@/lib/brand.generated";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { isRtl } from "@/lib/languages";
+import { siteText } from "@/lib/locale";
+import { currentLanguage } from "@/lib/locale-server";
 
 const kinds = ["Template packs", "Planners", "Workbooks", "Checklists", "Letter kits", "Call scripts", "Trackers", "Swipe files", "Budget sheets", "Meal plans", "Study guides", "Launch kits"];
 
@@ -92,7 +95,10 @@ function Bento({ className, children }: { className?: string; children: React.Re
   return <div className={cn("reveal lift overflow-hidden rounded-3xl border border-line bg-surface p-7", className)}>{children}</div>;
 }
 
-export default function Home() {
+export default async function Home() {
+  const lang = await currentLanguage();
+  const t = siteText(lang);
+  const dir = isRtl(lang) ? "rtl" : undefined;
   return (
     <>
       {/* Hero */}
@@ -104,18 +110,20 @@ export default function Home() {
             <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-muted">
               <span className="size-1.5 rounded-full bg-accent" /> AI studio for digital products
             </p>
-            <h1 className="font-display text-[clamp(2.75rem,7vw,5.25rem)] leading-[0.95] tracking-tight">
-              From one idea to a product that <em className="text-accent">sells itself</em> daily.
+            <h1 dir={dir} lang={lang} className={cn("font-display text-[clamp(2.75rem,7vw,5.25rem)] tracking-tight", dir ? "leading-[1.2]" : "leading-[0.95]")}>
+              {t.title[0]}
+              <em className="text-accent">{t.title[1]}</em>
+              {t.title[2]}
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-              Kitforge researches what to make, writes the full printable product, and promotes it every day on the budget you set. You approve; the agents do the rest.
+            <p dir={dir} lang={lang} className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
+              {t.sub}
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <LinkButton href="/sign-up" size="lg">
-                Start free <ArrowRight className="size-4" aria-hidden />
+                {t.startFree} <ArrowRight className="size-4" aria-hidden />
               </LinkButton>
               <LinkButton href="/store" variant="secondary" size="lg">
-                Browse the store
+                {t.browse}
               </LinkButton>
             </div>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">

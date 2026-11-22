@@ -6,6 +6,7 @@ import { blockType, finishPages } from "@/lib/ai";
 import { renderProductPdf } from "@/lib/pdf";
 import { createProduct, generateOutline, generateSection } from "@/server/products";
 import { updateSettings } from "@/server/settings";
+import { pickLanguage, siteText } from "@/lib/locale";
 import { makeUser } from "./helpers";
 
 describe("children's drawings", () => {
@@ -171,5 +172,28 @@ describe("languages", () => {
     const done = await generateSection(user, outlined.id, 0);
     const blocks = done.sections[0].pages.flatMap((pg) => pg.blocks);
     expect(blocks.filter((b) => b.type === "drawing").length).toBe(done.sections[0].pages.length);
+  });
+});
+
+describe("choosing a visitor's language", () => {
+  it("prefers a saved choice, then the browser's own order, then English", () => {
+    expect(pickLanguage("ar", "sv-SE,sv;q=0.9")).toBe("ar");
+    expect(pickLanguage(undefined, "sv-SE,sv;q=0.9,en-US;q=0.8")).toBe("sv");
+    expect(pickLanguage(undefined, "en;q=0.5, fr-CA;q=0.9")).toBe("fr");
+    expect(pickLanguage(undefined, "nb-NO,nb;q=0.9")).toBe("no");
+    expect(pickLanguage(undefined, "ja,zh;q=0.9,ar-EG;q=0.8")).toBe("ar");
+    expect(pickLanguage("xx", "ja")).toBe("en");
+    expect(pickLanguage(null, null)).toBe("en");
+    expect(pickLanguage(undefined, "de;q=0, it")).toBe("it");
+  });
+
+  it("has the header and headline in every language", () => {
+    const keys = Object.keys(siteText("en"));
+    for (const l of LANGUAGES) {
+      const t = siteText(l.id);
+      expect(Object.keys(t), l.id).toEqual(keys);
+      expect(t.title, l.id).toHaveLength(3);
+      expect(t.sub.length, l.id).toBeGreaterThan(40);
+    }
   });
 });

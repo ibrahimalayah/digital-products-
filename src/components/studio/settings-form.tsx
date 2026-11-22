@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { api, errorMessage } from "@/lib/client";
 import { Badge, Button, Card, Field, Input, Notice, Textarea, Select } from "@/components/ui";
 import { LANGUAGES } from "@/lib/languages";
+import { LANG_COOKIE } from "@/lib/locale";
 import { cn } from "@/lib/cn";
 
 type Kind = "buffer" | "postiz";
@@ -64,6 +65,8 @@ export function SettingsForm({ initial }: { initial: Settings }) {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
             void patch("brand", { brandName: String(f.get("brandName") ?? "").trim(), brandVoice: String(f.get("brandVoice") ?? "").trim(), language: String(f.get("language") ?? "en") }, "Brand saved.");
+            // Keep the site in the same language as the agents.
+            document.cookie = `${LANG_COOKIE}=${String(f.get("language") ?? "en")}; path=/; max-age=31536000; samesite=lax`;
           }}
         >
           <Field label="Brand name" htmlFor="brandName">

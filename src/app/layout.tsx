@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/lib/brand.generated";
+import { currentLanguage } from "@/lib/locale-server";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -20,7 +21,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Reading the nonce also makes every page render per request, which nonces require.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}>
+    <html lang={await currentLanguage()} suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}>
       <head>
         {/* Applies a saved theme before first paint so the page never flashes. */}
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />

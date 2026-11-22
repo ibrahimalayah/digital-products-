@@ -1,31 +1,37 @@
 import Link from "next/link";
 import { LinkButton, Logo } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguagePicker } from "@/components/language-picker";
+import { siteText } from "@/lib/locale";
+import { currentLanguage } from "@/lib/locale-server";
 
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default async function SiteLayout({ children }: { children: React.ReactNode }) {
+  const lang = await currentLanguage();
+  const t = siteText(lang);
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-line/60 bg-bg/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 max-sm:gap-2 sm:px-6">
           <Link href="/" aria-label="Kitforge home">
             <Logo />
           </Link>
           <nav className="flex items-center gap-0.5 text-sm" aria-label="Main">
             <Link href="/#how" className="hidden rounded-full px-3 py-2 text-muted transition-colors hover:text-ink md:block">
-              How it works
+              {t.how}
             </Link>
-            <Link href="/store" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-ink">
-              Store
+            <Link href="/store" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-ink max-sm:px-2">
+              {t.store}
             </Link>
-            <Link href="/pricing" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-ink">
-              Pricing
+            <Link href="/pricing" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-ink max-sm:px-2">
+              {t.pricing}
             </Link>
             <Link href="/sign-in" className="hidden rounded-full px-3 py-2 text-muted transition-colors hover:text-ink sm:block">
-              Sign in
+              {t.signIn}
             </Link>
+            <LanguagePicker value={lang} label={t.language} />
             <ThemeToggle className="mx-1 hidden sm:grid" />
             <LinkButton href="/app" size="sm">
-              Open studio
+              {t.openStudio}
             </LinkButton>
           </nav>
         </div>

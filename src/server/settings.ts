@@ -5,12 +5,14 @@ import { getPlan } from "@/lib/plans";
 import { badRequest, limitReached } from "@/lib/errors";
 import { isPublisher, listChannels, type PublisherAuth, type PublisherKind } from "@/lib/publishers";
 import { isLanguage, type LanguageId } from "@/lib/languages";
+import { currentLanguageOrEnglish } from "@/lib/locale-server";
 import type { CurrentUser } from "@/lib/session";
 
 export async function getSettings(userId: string) {
   const [row] = await db.select().from(schema.settings).where(eq(schema.settings.userId, userId)).limit(1);
   if (row) return row;
-  const [created] = await db.insert(schema.settings).values({ userId }).onConflictDoNothing().returning();
+  // A new account starts in the language its owner chose on the site, or their browser prefers.
+  const [created] = await db.insert(schema.settings).values({ userId, language: await currentLanguageOrEnglish() }).onConflictDoNothing().returning();
   if (created) return created;
   const [again] = await db.select().from(schema.settings).where(eq(schema.settings.userId, userId)).limit(1);
   return again;

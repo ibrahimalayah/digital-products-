@@ -34,6 +34,24 @@ test("public pages render and protect the studio", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("the site follows the browser's language and lets visitors change it", async ({ browser }) => {
+  const ctx = await browser.newContext({ locale: "sv-SE" });
+  const page = await ctx.newPage();
+  const errors = watchConsole(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("säljer sig själv");
+  await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+  await page.getByLabel("Språk").selectOption("ar");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("يبيع نفسه");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveAttribute("dir", "rtl");
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("يبيع نفسه"); // remembered
+  await page.getByLabel("اللغة").selectOption("en");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("From one idea");
+  expect(errors.filter((e) => !/status of 401/.test(e))).toEqual([]);
+  await ctx.close();
+});
+
 test("security headers are set", async ({ request }) => {
   const res = await request.get("/");
   const h = res.headers();
