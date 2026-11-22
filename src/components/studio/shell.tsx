@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, CreditCard, FileText, LayoutDashboard, Library, Lightbulb, LogOut, Megaphone, Settings, ShieldCheck, Store } from "lucide-react";
+import { Bot, Clapperboard, CreditCard, FileText, LayoutDashboard, Library, Lightbulb, LogOut, Megaphone, Settings, ShieldCheck, Store } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,6 +12,7 @@ const nav = [
   { href: "/app/ideas", label: "Idea lab", icon: Lightbulb, exact: false },
   { href: "/app/products", label: "Products", icon: FileText, exact: false },
   { href: "/app/campaigns", label: "Campaigns", icon: Megaphone, exact: false },
+  { href: "/app/videos", label: "Lead videos", icon: Clapperboard, exact: false },
   { href: "/app/agents", label: "Agents", icon: Bot, exact: false },
   { href: "/app/library", label: "Library", icon: Library, exact: false },
   { href: "/app/billing", label: "Billing", icon: CreditCard, exact: false },

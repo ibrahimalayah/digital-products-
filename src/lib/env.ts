@@ -34,7 +34,8 @@ export const integrations = {
         process.env.ANTHROPIC_API_KEY ||
         process.env.AI_GATEWAY_API_KEY ||
         process.env.VERCEL_OIDC_TOKEN ||
-        process.env.VERCEL,
+        process.env.VERCEL ||
+        process.env.AI_KEYLESS !== "0",
     ),
   aiProvider: () => {
     const chain = [
@@ -43,6 +44,7 @@ export const integrations = {
       process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Gemini" : "",
       process.env.OPENROUTER_API_KEY ? "OpenRouter" : "",
       process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEYS ? "OpenAI" : "",
+      process.env.AI_KEYLESS !== "0" ? "keyless free tier (slow)" : "",
     ].filter(Boolean);
     const last = process.env.ANTHROPIC_API_KEY ? "Anthropic" : "Vercel AI Gateway";
     return chain.length ? `${chain.join(" → ")}, then ${last}` : last;

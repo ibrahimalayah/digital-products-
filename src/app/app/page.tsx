@@ -107,6 +107,7 @@ export default async function Overview() {
           <div className="mt-5 space-y-4">
             <Meter label="Idea research runs this month" used={usage.ideas} limit={plan.limits.ideasPerMonth} />
             <Meter label="Products generated this month" used={usage.products} limit={plan.limits.productsPerMonth} />
+            <Meter label="Lead videos this month" used={usage.videos} limit={plan.limits.videosPerMonth} />
             <Meter label="Campaigns" used={campaigns} limit={plan.limits.campaigns} />
             <Meter label="Planned ad budget ($)" used={Math.round(budget / 100)} limit={plan.limits.monthlyAdBudgetCents / 100} />
           </div>

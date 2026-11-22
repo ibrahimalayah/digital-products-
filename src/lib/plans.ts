@@ -8,6 +8,7 @@ export type Plan = {
   limits: {
     ideasPerMonth: number; // idea-research runs
     productsPerMonth: number; // full product generations
+    videosPerMonth: number; // short lead-video scripts
     campaigns: number; // active campaigns
     postsPerDay: number; // per campaign
     monthlyAdBudgetCents: number; // total planned budget across active campaigns
@@ -25,12 +26,13 @@ export const PLANS: Record<PlanId, Plan> = {
     limits: {
       ideasPerMonth: 3,
       productsPerMonth: 1,
+      videosPerMonth: 2,
       campaigns: 1,
       postsPerDay: 1,
       monthlyAdBudgetCents: 50_00,
       autopilot: false,
     },
-    features: ["3 idea research runs a month", "1 full product a month", "1 campaign, up to $50 planned budget", "Print-ready PDF export"],
+    features: ["3 idea research runs a month", "1 full product a month", "2 short lead videos a month", "1 campaign, up to $50 planned budget", "Print-ready PDF export"],
   },
   pro: {
     id: "pro",
@@ -40,12 +42,13 @@ export const PLANS: Record<PlanId, Plan> = {
     limits: {
       ideasPerMonth: 40,
       productsPerMonth: 15,
+      videosPerMonth: 30,
       campaigns: 5,
       postsPerDay: 3,
       monthlyAdBudgetCents: 500_00,
       autopilot: true,
     },
-    features: ["40 idea research runs a month", "15 full products a month", "5 campaigns, up to $500 planned budget", "Daily autopilot: 3 posts a day per campaign", "Auto-publish through Buffer or Postiz"],
+    features: ["40 idea research runs a month", "15 full products a month", "30 short lead videos a month", "5 campaigns, up to $500 planned budget", "Daily autopilot: 3 posts a day per campaign", "Auto-publish through Buffer or Postiz"],
   },
   business: {
     id: "business",
@@ -55,12 +58,13 @@ export const PLANS: Record<PlanId, Plan> = {
     limits: {
       ideasPerMonth: 200,
       productsPerMonth: 60,
+      videosPerMonth: 150,
       campaigns: 25,
       postsPerDay: 10,
       monthlyAdBudgetCents: 5_000_00,
       autopilot: true,
     },
-    features: ["200 idea research runs a month", "60 full products a month", "25 campaigns, up to $5,000 planned budget", "Daily autopilot: 10 posts a day per campaign", "Auto-approve and hands-off publishing"],
+    features: ["200 idea research runs a month", "60 full products a month", "150 short lead videos a month", "25 campaigns, up to $5,000 planned budget", "Daily autopilot: 10 posts a day per campaign", "Auto-approve and hands-off publishing"],
   },
 };
 

@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { newId } from "@/lib/utils";
 
-export type AgentName = "idea-scout" | "product-writer" | "ad-planner" | "daily-poster" | "publisher";
+export type AgentName = "idea-scout" | "product-writer" | "ad-planner" | "daily-poster" | "publisher" | "video-writer";
 
 export async function logRun(userId: string, agent: AgentName, status: "ok" | "error" | "skipped", summary: string) {
   await db.insert(schema.agentRuns).values({ id: newId("run"), userId, agent, status, summary: summary.slice(0, 400) });

@@ -25,4 +25,14 @@ export type BudgetPlan = {
   kpis: string[];
 };
 
-export type PlanId = "free" | "pro" | "business";
+/** One beat of a short vertical video: what is said and what is shown on screen. */
+export type VideoScene = { caption: string; narration: string };
+
+export type VideoScript = {
+  scenes: VideoScene[];
+  /** Ready-to-paste post text for TikTok, Reels or Shorts. */
+  description: string;
+  hashtags: string[];
+};
+
+export type PlanId ="free" | "pro" | "business";

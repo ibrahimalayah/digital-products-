@@ -1,5 +1,6 @@
 // Deterministic stand-ins for the AI layer, used only by automated tests
 // (AI_MOCK=1 outside production). Not part of the product.
+// Shapes mirror what the real models return, before normalising.
 import type { BudgetPlan, ProductOutline, ProductSection } from "./types";
 
 export function ideas(niche: string) {
@@ -39,6 +40,19 @@ export function section(target: { title: string; summary: string; pageTitles: st
         { type: "tip", title: "", text: "Set a ten minute timer.", items: [] },
       ],
     })),
+  };
+}
+
+export function video(title: string) {
+  return {
+    title: `${title} in 15 seconds`,
+    scenes: [
+      { caption: "Still stuck at step one?", narration: "Still stuck at step one?" },
+      { caption: "Here is the shortcut", narration: `${title} gives you the exact steps.` },
+      { caption: "Get it today", narration: "Get it today from the link." },
+    ],
+    description: `The shortcut for ${title}.`,
+    hashtags: ["digitalproducts", "#printables"],
   };
 }
 

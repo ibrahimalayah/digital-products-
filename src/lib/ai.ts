@@ -2,7 +2,7 @@ import { generateText, Output, type LanguageModel } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { AppError } from "./errors";
-import type { BudgetPlan, ProductOutline, ProductSection } from "./types";
+import type { BudgetPlan, ProductOutline, ProductSection, VideoScript } from "./types";
 import * as fixture from "./ai-fixture";
 import { chainProviders, completeJson } from "./ai-chain";
 
@@ -239,7 +239,68 @@ export function normalisePlan(plan: BudgetPlan, channels: string[]): BudgetPlan 
 }
 
 /** Every shape the agents ask a model for. Exported so tests can check each one can be sent. */
-export const AI_SCHEMAS = () => ({ ideasSchema, outlineSchema, sectionSchema, planSchema, postsSchema });
+export const AI_SCHEMAS = () => ({ ideasSchema, outlineSchema, sectionSchema, planSchema, postsSchema, videoSchema });
+
+/* ───────────── Videos ───────────── */
+
+const videoSchema = z.object({
+  title: z.string(),
+  scenes: z.array(z.object({ caption: z.string(), narration: z.string() })),
+  description: z.string(),
+  hashtags: z.array(z.string()),
+});
+
+export type VideoBrief = {
+  product: ProductBrief & { priceUsd: number };
+  goal: "leads" | "sales";
+  seconds: number;
+  brandVoice: string;
+};
+
+/** Spoken words that fit the length, leaving room for the pause between scenes. */
+export const wordsFor = (seconds: number) => Math.round(seconds * 2.2);
+
+export async function writeVideoScript(v: VideoBrief): Promise<{ title: string; script: VideoScript }> {
+  const scenes = v.seconds <= 15 ? 4 : v.seconds <= 30 ? 5 : 7;
+  const raw = fixtureMode()
+    ? fixture.video(v.product.title)
+    : await structured(
+        videoSchema,
+        `You write scripts for short vertical videos (TikTok, Reels, Shorts) where one friendly presenter talks to camera and sells a small digital product by being specific and useful. No hype, no fake urgency, no invented numbers, testimonials or results. ${GUARD}`,
+        `Write a ${v.seconds}-second script.\n${brief(v.product)}\nPrice: $${v.product.priceUsd}\n` +
+          `Goal: ${v.goal === "leads" ? "get viewers to tap the link and look at the product" : "get viewers to buy today"}\n` +
+          `${v.brandVoice ? fence("brand_voice", v.brandVoice) : ""}\n\n` +
+          `Return:\n- title: a short working title for the video\n` +
+          `- scenes: exactly ${scenes} scenes in order: a hook that names the viewer's problem in the first two seconds, why it hurts, what this product is, what is inside it, and a closing call to action. ` +
+          `Each scene has \`narration\` (what the presenter says, first person, plain spoken English, one or two short sentences, no web addresses, no hashtags, no emoji) and \`caption\` (the on-screen line, at most 7 words, no full stop).\n` +
+          `- Length is strict: the narration of all scenes together is at most ${wordsFor(v.seconds)} words, so about ${Math.round(wordsFor(v.seconds) / scenes)} words per scene. Count them.\n` +
+          "- The last scene tells the viewer to tap the link to get it. Do not read out a web address.\n" +
+          "- description: the post text to publish with the video, 1 to 2 sentences\n- hashtags: 3 to 5 relevant hashtags",
+        1800,
+      );
+  return { title: (raw.title || v.product.title).trim().slice(0, 120), script: normaliseVideo(raw, v.seconds) };
+}
+
+/** Cleans a model's script so it can be spoken and drawn: no links read aloud, short captions, sane sizes. */
+export function normaliseVideo(raw: z.infer<typeof videoSchema>, seconds: number): VideoScript {
+  const speakable = (s: string) =>
+    s
+      .replace(/https?:\/\/\S+|www\.\S+/gi, "the link")
+      .replace(/#\w+/g, "")
+      .replace(/[*_`]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  let scenes = raw.scenes
+    .map((s) => ({ caption: trimToLimit(speakable(s.caption).replace(/[.]+$/, ""), 60), narration: trimToLimit(speakable(s.narration), 320) }))
+    .filter((s) => s.narration || s.caption)
+    .map((s) => ({ caption: s.caption || trimToLimit(s.narration.replace(/[.]+$/, ""), 60), narration: s.narration || s.caption }))
+    .slice(0, 8);
+  // A script far over length is cut from the middle, keeping the hook and the call to action.
+  const words = (list: typeof scenes) => list.reduce((n, s) => n + s.narration.split(" ").length, 0);
+  while (scenes.length > 3 && words(scenes) > wordsFor(seconds) * 1.6) scenes = [...scenes.slice(0, -2), scenes[scenes.length - 1]];
+  const hashtags = [...new Set(raw.hashtags.map((h) => h.replace(/[^\p{L}\p{N}_]/gu, "")).filter(Boolean).map((h) => `#${h.slice(0, 40)}`))].slice(0, 5);
+  return { scenes, description: raw.description.replace(/\s+/g, " ").trim().slice(0, 400), hashtags };
+}
 
 const postsSchema = z.object({
   posts: z.array(z.object({ channel: z.string(), angle: z.string(), content: z.string() })),

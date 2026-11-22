@@ -22,6 +22,13 @@
       "when": 1795286297219,
       "tag": "0002_cooing_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795322359573,
+      "tag": "0003_thin_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

@@ -4,17 +4,17 @@ import { getPlan } from "./plans";
 import { limitReached } from "./errors";
 import { period } from "./utils";
 
-export type UsageKey = "ideas" | "products";
+export type UsageKey = "ideas" | "products" | "videos";
 
-const LIMIT_FIELD = { ideas: "ideasPerMonth", products: "productsPerMonth" } as const;
-const LABEL = { ideas: "idea research runs", products: "product generations" } as const;
+const LIMIT_FIELD = { ideas: "ideasPerMonth", products: "productsPerMonth", videos: "videosPerMonth" } as const;
+const LABEL = { ideas: "idea research runs", products: "product generations", videos: "lead videos" } as const;
 
 export async function getUsage(userId: string) {
   const rows = await db
     .select()
     .from(schema.usage)
     .where(and(eq(schema.usage.userId, userId), eq(schema.usage.period, period())));
-  const out: Record<UsageKey, number> = { ideas: 0, products: 0 };
+  const out: Record<UsageKey, number> = { ideas: 0, products: 0, videos: 0 };
   for (const r of rows) if (r.key in out) out[r.key as UsageKey] = r.count;
   return out;
 }

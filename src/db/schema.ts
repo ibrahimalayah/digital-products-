@@ -9,7 +9,7 @@ import {
   primaryKey,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { ProductOutline, ProductSection, BudgetPlan, CampaignChannel } from "@/lib/types";
+import type { ProductOutline, ProductSection, BudgetPlan, CampaignChannel, VideoScript } from "@/lib/types";
 
 /* ───────────── Auth (Better Auth) ───────────── */
 
@@ -283,6 +283,28 @@ export const rateLimits = pgTable(
     count: integer("count").default(0).notNull(),
   },
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
+);
+
+// Short vertical lead videos. Only the script is stored; the video file is
+// rendered in the owner's browser and never uploaded.
+export const videos = pgTable(
+  "videos",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    goal: text("goal").default("leads").notNull(), // "leads" | "sales"
+    seconds: integer("seconds").default(30).notNull(),
+    voice: text("voice").default("af_heart").notNull(),
+    script: jsonb("script").$type<VideoScript>().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("videos_user_idx").on(t.userId, t.createdAt)],
 );
 
 // Processed Stripe event ids, so webhook retries are idempotent.

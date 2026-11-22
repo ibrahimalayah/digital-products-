@@ -47,3 +47,5 @@ next-env.d.ts
 !.env.example
 /.next-e2e/
 .demo-credentials.local
+# speech runtime, copied from node_modules by scripts/voice-assets.mjs
+/public/voice/

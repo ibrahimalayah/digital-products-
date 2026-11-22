@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CalendarClock, Megaphone, PenLine, Send, Sparkles } from "lucide-react";
+import { CalendarClock, Clapperboard, Megaphone, PenLine, Send, Sparkles } from "lucide-react";
 import { requireUserPage } from "@/lib/session";
 import { getPlan } from "@/lib/plans";
 import { listRuns } from "@/server/agents-log";
@@ -13,6 +13,7 @@ export const metadata: Metadata = { title: "Agents" };
 const AGENTS = [
   { id: "idea-scout", icon: Sparkles, name: "Idea scout", when: "On demand, in the idea lab", does: "Turns a niche into specific product ideas." },
   { id: "product-writer", icon: PenLine, name: "Product writer", when: "On demand, per product", does: "Plans the outline and writes every page." },
+  { id: "video-writer", icon: Clapperboard, name: "Video writer", when: "On demand, under Lead videos", does: "Scripts a short vertical video that sends viewers to a product." },
   { id: "ad-planner", icon: Megaphone, name: "Ad planner", when: "When a campaign is created or replanned", does: "Splits the budget across channels and sets angles." },
   { id: "daily-poster", icon: CalendarClock, name: "Daily poster", when: "Every morning with autopilot, or on demand", does: "Writes the day's posts for each active campaign." },
   { id: "publisher", icon: Send, name: "Publisher", when: "After approval, or automatically", does: "Schedules posts to your accounts through Buffer or Postiz." },

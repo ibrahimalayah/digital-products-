@@ -43,7 +43,8 @@ test("security headers are set", async ({ request }) => {
   const scriptSrc = csp.split(";").find((d) => d.trim().startsWith("script-src"))!;
   expect(scriptSrc).toMatch(/'nonce-[A-Za-z0-9+/=]+'/);
   expect(scriptSrc).not.toContain("unsafe-inline");
-  expect(scriptSrc).not.toContain("unsafe-eval");
+  // WebAssembly (the in-browser voice model) is allowed; evaluating JavaScript text is not.
+  expect(scriptSrc).not.toContain(" 'unsafe-eval'");
   const again = (await request.get("/")).headers()["content-security-policy"];
   expect(again).not.toBe(csp); // a fresh nonce per request
   expect(h["x-frame-options"]).toBe("DENY");
@@ -51,6 +52,8 @@ test("security headers are set", async ({ request }) => {
   expect(h["x-powered-by"]).toBeUndefined();
   expect((await request.get("/api/products")).status()).toBe(401);
   expect((await request.get("/api/cron/daily")).status()).toBe(401);
+  expect((await request.get("/api/cron/selftest")).status()).toBe(401);
+  expect((await request.get("/api/videos")).status()).toBe(401);
 });
 
 test("creator journey: idea → product → PDF → campaign → posts", async ({ page }) => {
@@ -268,6 +271,31 @@ test("returning user signs in and uses every remaining screen", async ({ page })
   await expect(page.getByLabel("Post text")).toHaveValue("Edited by hand before publishing.");
 
   expect(errors.filter((e) => !/status of 401/.test(e))).toEqual([]);
+});
+
+test("lead video: script, edit, then a captions-only file", async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto("/sign-in?next=%2Fapp%2Fvideos");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/app\/videos$/);
+  await page.getByLabel("Voice").selectOption("none");
+  await page.getByRole("button", { name: "Write script" }).click();
+  await expect(page).toHaveURL(/\/app\/videos\/vid_/);
+  await expect(page.getByLabel("On screen").first()).toHaveValue("Still stuck at step one?");
+  await page.getByLabel("On screen").first().fill("A better hook");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("On screen").first()).toHaveValue("A better hook");
+  // Recording runs in real time: three short scenes take about seven seconds.
+  await page.getByRole("button", { name: "Create video" }).click();
+  await expect(page.getByText("Your video is ready")).toBeVisible({ timeout: 45_000 });
+  const [file] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Download video" }).click()]);
+  expect(file.suggestedFilename()).toMatch(/\.(mp4|webm)$/);
+  await shot(page, "17-lead-video.png");
+  expect(errors).toEqual([]);
 });
 
 test("a second account cannot reach the first account's data", async ({ page }) => {

@@ -6,7 +6,7 @@ import { z } from "zod";
 // Variable names match Rekrutify, so the same keys work in both projects.
 
 export type ChainProvider = {
-  name: "freellmapi" | "groq" | "google" | "openrouter" | "openai";
+  name: "freellmapi" | "groq" | "google" | "openrouter" | "openai" | "keyless";
   baseUrl: string;
   key: string;
   model: string;
@@ -39,7 +39,22 @@ export function chainProviders(): ChainProvider[] {
   for (const key of env("OPENAI_API_KEYS", "OPENAI_API_KEY").split(",").map((k) => k.trim()).filter(Boolean)) {
     out.push({ name: "openai", baseUrl, key, model: env("OPENAI_MODEL") || "gpt-4o-mini" });
   }
+  if (keylessAllowed()) out.push({ name: "keyless", baseUrl: KEYLESS_URL, key: "", model: "openai" });
   return out;
+}
+
+// Last resort: a public free tier that needs no key, so the agents answer even
+// before any key is added. It is slow and limited to about one reply every 45
+// seconds per address, so real keys always go first. Set AI_KEYLESS=0 to turn
+// it off. Never used by automated tests.
+const KEYLESS_URL = "https://text.pollinations.ai/openai";
+export const keylessAllowed = () =>
+  process.env.AI_KEYLESS !== "0" && process.env.NODE_ENV !== "test" && !process.env.ANTHROPIC_API_KEY && !process.env.AI_GATEWAY_API_KEY;
+
+/** Reads "wait 41 seconds" out of a free tier's rate-limit reply. */
+export function waitSeconds(text: string): number | null {
+  const m = text.match(/wait (\d{1,3}) seconds?/i);
+  return m ? Number(m[1]) : null;
 }
 
 // Free-tier models are often reasoning models whose hidden thinking counts
@@ -85,13 +100,15 @@ export async function completeJson<T extends z.ZodType>(
   for (const p of attempts) {
     const free = p.name !== "openai";
     // Some free routers reject response_format; those are retried once without it.
-    for (const jsonMode of [true, false]) {
+    // A keyless tier that asks us to wait gets one more go after the wait.
+    const modes = p.name === "keyless" ? [true, true, false] : [true, false];
+    for (const jsonMode of modes) {
       const remaining = deadline - Date.now();
       if (remaining < 2_000) return { ok: false, reason: "all_failed" };
       try {
         const res = await fetch(`${p.baseUrl}/chat/completions`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.key}` },
+          headers: { "Content-Type": "application/json", ...(p.key ? { Authorization: `Bearer ${p.key}` } : {}) },
           body: JSON.stringify({
             model: p.model,
             messages,
@@ -104,6 +121,15 @@ export async function completeJson<T extends z.ZodType>(
         });
         if (!res.ok) {
           console.error(`[ai] ${p.name} upstream ${res.status}`);
+          if (p.name === "keyless" && (res.status === 402 || res.status === 429)) {
+            const wait = waitSeconds(await res.text().catch(() => ""));
+            const left = deadline - Date.now();
+            if (wait !== null && (wait + 1) * 1000 < left - 15_000) {
+              await new Promise((r) => setTimeout(r, (wait + 1) * 1000));
+              continue;
+            }
+            break;
+          }
           if (res.status === 400 && jsonMode) continue; // try again without response_format
           break;
         }

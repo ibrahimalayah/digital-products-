@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/brand.mjs && next dev",
-    "build": "node scripts/brand.mjs && tsx scripts/migrate.ts && next build",
+    "dev": "node scripts/brand.mjs && node scripts/voice-assets.mjs && next dev",
+    "build": "node scripts/brand.mjs && node scripts/voice-assets.mjs && tsx scripts/migrate.ts && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -24,6 +24,7 @@
     "better-auth": "^1.7.27",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",
+    "kokoro-js": "^1.2.1",
     "lucide-react": "^1.77.0",
     "next": "16.4.6",
     "pg": "^8.23.1",
