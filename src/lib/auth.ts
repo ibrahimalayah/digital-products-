@@ -3,6 +3,9 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { db, schema } from "@/db";
 import { appUrl, authSecret } from "./env";
+import { emailReady, linkEmail, sendEmail } from "./email";
+import { getI18n } from "./i18n-server";
+import { isRtl } from "./languages";
 
 const create = () =>
   betterAuth({
@@ -24,6 +27,30 @@ const create = () =>
     minPasswordLength: 10,
     maxPasswordLength: 128,
     autoSignIn: true,
+    // The emailed link works once, for an hour, and signs every device out when used.
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      if (!emailReady()) {
+        console.warn("[auth] password reset requested but no email service is configured");
+        return;
+      }
+      const { t, lang } = await getI18n();
+      const { text, html } = linkEmail({
+        greeting: t("Hi {name},", { name: user.name || user.email }),
+        intro: t("Use this link to choose a new password. It works for one hour and can be used once:"),
+        button: t("Choose a new password"),
+        url,
+        outro: t("If you did not ask for this, you can ignore this email. Your password stays the same."),
+        rtl: isRtl(lang),
+      });
+      try {
+        await sendEmail({ to: user.email, subject: t("Reset your Kitforge password"), text, html });
+      } catch (e) {
+        // Never tell the visitor whether sending worked: that would reveal which addresses have accounts.
+        console.error("[auth] could not send the password reset email:", e instanceof Error ? e.message : e);
+      }
+    },
   },
   user: {
     additionalFields: {
@@ -44,6 +71,8 @@ const create = () =>
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60, max: 5 },
+      "/request-password-reset": { window: 300, max: 3 },
+      "/reset-password": { window: 300, max: 5 },
     },
   },
   advanced: {

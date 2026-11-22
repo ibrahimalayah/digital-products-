@@ -45,6 +45,13 @@ export function AuthForm({ mode, next }: { mode: "sign-in" | "sign-up"; next?: s
       <Field label={t("Password")} htmlFor="password" hint={signUp ? t("At least 10 characters.") : undefined}>
         <Input id="password" name="password" type="password" autoComplete={signUp ? "new-password" : "current-password"} required minLength={signUp ? 10 : 1} maxLength={128} />
       </Field>
+      {signUp ? null : (
+        <p className="-mt-1 text-end text-sm">
+          <Link href="/forgot-password" className="text-muted underline underline-offset-4 hover:text-ink">
+            {t("Forgot password?")}
+          </Link>
+        </p>
+      )}
       {error ? <Notice>{error}</Notice> : null}
       <Button type="submit" size="lg" className="w-full" loading={loading}>
         {t(signUp ? "Create account" : "Sign in")}

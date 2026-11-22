@@ -28,6 +28,8 @@ export default defineConfig({
       NEXT_PUBLIC_APP_URL: `http://localhost:${PORT}`,
       ADMIN_BOOTSTRAP_TOKEN: "e2e-owner-token-0123456789abcdef",
       STRIPE_SECRET_KEY: "",
+      // Mail is collected in a file the tests read, never sent.
+      EMAIL_OUTBOX_FILE: "test-results/outbox.jsonl",
     },
   },
 });

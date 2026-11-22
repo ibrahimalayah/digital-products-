@@ -385,3 +385,63 @@ test("the studio is translated and its language can be changed from the dashboar
   expect(errors).toEqual([]);
   await ctx.close();
 });
+
+test("forgot password: emailed link sets a new password", async ({ page }) => {
+  test.setTimeout(240_000);
+  const fs = await import("node:fs");
+  const outbox = "test-results/outbox.jsonl";
+  const mails = () => (fs.existsSync(outbox) ? fs.readFileSync(outbox, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l) as { to: string; subject: string; text: string }) : []);
+  const who = `forgetful-${Date.now()}@example.test`;
+  const fresh = "a-brand-new-passphrase";
+  const errors = watchConsole(page);
+
+  await page.goto("/sign-up");
+  await page.getByLabel("Name").fill("Fay Forgetful");
+  await page.getByLabel("Email").fill(who);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page).toHaveURL(/\/app/);
+  await page.context().clearCookies();
+
+  await page.goto("/sign-in");
+  await page.getByRole("link", { name: "Forgot password?" }).click();
+  await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+  // An unknown address gets the same answer and no mail.
+  const before = mails().length;
+  await page.getByLabel("Email").fill(`nobody-${Date.now()}@example.test`);
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByText("If an account exists for that address")).toBeVisible();
+  expect(mails().length).toBe(before);
+
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email").fill(who);
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByText("If an account exists for that address")).toBeVisible();
+  await shot(page, "15-forgot-password.png");
+  const mail = mails().at(-1)!;
+  expect(mail.to).toBe(who);
+  expect(mail.subject).toBe("Reset your Kitforge password");
+  const link = mail.text.match(/https?:\/\/\S+/)![0];
+
+  await page.goto(link);
+  await expect(page).toHaveURL(/\/reset-password\?token=/);
+  await page.getByLabel("New password").fill(fresh);
+  await page.getByRole("button", { name: "Save new password" }).click();
+  await expect(page.getByText("Password changed. You can sign in now.")).toBeVisible();
+
+  // The link works once.
+  await page.goto(link);
+  await expect(page.getByText("This reset link is invalid or has expired")).toBeVisible();
+
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill(who);
+  // Sign-in allows five tries a minute and the journeys above used some, so let that window pass first.
+  await page.waitForTimeout(61_000);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator("form").getByRole("alert")).toContainText("Invalid email or password"); // the old password no longer works
+  await page.getByLabel("Password").fill(fresh);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/app$/);
+  expect(errors.filter((e) => !/status of (401|429)/.test(e))).toEqual([]);
+});
