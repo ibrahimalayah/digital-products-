@@ -721,6 +721,6 @@
   "Could not send the link. Try again in a minute.": "تعذّر إرسال الرابط. حاول مرة أخرى بعد دقيقة.",
   "Pick a password you do not use anywhere else.": "اختر كلمة مرور لا تستخدمها في أي مكان آخر.",
   "Email sending": "إرسال البريد الإلكتروني",
-  "Set RESEND_API_KEY or BREVO_API_KEY (both have free plans) and EMAIL_FROM.": "اضبط RESEND_API_KEY أو BREVO_API_KEY (كلاهما له خطة مجانية) و EMAIL_FROM.",
-  "Sends password reset links.": "يرسل روابط إعادة تعيين كلمة المرور."
+  "Sends password reset links.": "يرسل روابط إعادة تعيين كلمة المرور.",
+  "Set SMTP_USER and SMTP_PASS (a Gmail address and its app password), or RESEND_API_KEY, or BREVO_API_KEY with EMAIL_FROM.": "اضبط SMTP_USER و SMTP_PASS (عنوان Gmail وكلمة مرور التطبيقات الخاصة به)، أو RESEND_API_KEY، أو BREVO_API_KEY مع EMAIL_FROM."
 }

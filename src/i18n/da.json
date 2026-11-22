@@ -721,6 +721,6 @@
   "Could not send the link. Try again in a minute.": "Linket kunne ikke sendes. Prøv igen om et minut.",
   "Pick a password you do not use anywhere else.": "Vælg en adgangskode, du ikke bruger andre steder.",
   "Email sending": "Afsendelse af e-mail",
-  "Set RESEND_API_KEY or BREVO_API_KEY (both have free plans) and EMAIL_FROM.": "Angiv RESEND_API_KEY eller BREVO_API_KEY (begge har gratis planer) og EMAIL_FROM.",
-  "Sends password reset links.": "Sender links til nulstilling af adgangskode."
+  "Sends password reset links.": "Sender links til nulstilling af adgangskode.",
+  "Set SMTP_USER and SMTP_PASS (a Gmail address and its app password), or RESEND_API_KEY, or BREVO_API_KEY with EMAIL_FROM.": "Angiv SMTP_USER og SMTP_PASS (en Gmail-adresse og dens app-adgangskode), eller RESEND_API_KEY, eller BREVO_API_KEY med EMAIL_FROM."
 }

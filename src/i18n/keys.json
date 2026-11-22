@@ -537,7 +537,7 @@
   "Set CRON_SECRET to a long random value.",
   "Set ENCRYPTION_KEY to a long random value.",
   "Set GROQ_API_KEY, GEMINI_API_KEY or OPENROUTER_API_KEY (all have free tiers), or add a card to Vercel AI Gateway.",
-  "Set RESEND_API_KEY or BREVO_API_KEY (both have free plans) and EMAIL_FROM.",
+  "Set SMTP_USER and SMTP_PASS (a Gmail address and its app password), or RESEND_API_KEY, or BREVO_API_KEY with EMAIL_FROM.",
   "Set the routine",
   "Settings",
   "Setup progress",

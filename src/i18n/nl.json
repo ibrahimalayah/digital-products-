@@ -721,6 +721,6 @@
   "Could not send the link. Try again in a minute.": "De link kon niet worden verstuurd. Probeer het over een minuut opnieuw.",
   "Pick a password you do not use anywhere else.": "Kies een wachtwoord dat je nergens anders gebruikt.",
   "Email sending": "E-mail versturen",
-  "Set RESEND_API_KEY or BREVO_API_KEY (both have free plans) and EMAIL_FROM.": "Stel RESEND_API_KEY of BREVO_API_KEY in (beide hebben een gratis abonnement) en EMAIL_FROM.",
-  "Sends password reset links.": "Verstuurt de links voor wachtwoordherstel."
+  "Sends password reset links.": "Verstuurt de links voor wachtwoordherstel.",
+  "Set SMTP_USER and SMTP_PASS (a Gmail address and its app password), or RESEND_API_KEY, or BREVO_API_KEY with EMAIL_FROM.": "Stel SMTP_USER en SMTP_PASS in (een Gmail-adres en het bijbehorende app-wachtwoord), of RESEND_API_KEY, of BREVO_API_KEY met EMAIL_FROM."
 }

@@ -721,6 +721,6 @@
   "Could not send the link. Try again in a minute.": "Det gick inte att skicka länken. Försök igen om en minut.",
   "Pick a password you do not use anywhere else.": "Välj ett lösenord som du inte använder någon annanstans.",
   "Email sending": "E-postutskick",
-  "Set RESEND_API_KEY or BREVO_API_KEY (both have free plans) and EMAIL_FROM.": "Ange RESEND_API_KEY eller BREVO_API_KEY (båda har gratisplaner) och EMAIL_FROM.",
-  "Sends password reset links.": "Skickar länkar för återställning av lösenord."
+  "Sends password reset links.": "Skickar länkar för återställning av lösenord.",
+  "Set SMTP_USER and SMTP_PASS (a Gmail address and its app password), or RESEND_API_KEY, or BREVO_API_KEY with EMAIL_FROM.": "Ange SMTP_USER och SMTP_PASS (en Gmail-adress och dess applösenord), eller RESEND_API_KEY, eller BREVO_API_KEY med EMAIL_FROM."
 }

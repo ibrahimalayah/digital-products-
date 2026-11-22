@@ -31,7 +31,7 @@ export default async function AdminSystem() {
       fix: t("Add a webhook to /api/stripe/webhook and set STRIPE_WEBHOOK_SECRET."),
       note: t("Confirms orders and plan changes."),
     },
-    { name: t("Email sending"), ok: emailReady(), fix: t("Set RESEND_API_KEY or BREVO_API_KEY (both have free plans) and EMAIL_FROM."), note: t("Sends password reset links.") },
+    { name: t("Email sending"), ok: emailReady(), fix: t("Set SMTP_USER and SMTP_PASS (a Gmail address and its app password), or RESEND_API_KEY, or BREVO_API_KEY with EMAIL_FROM."), note: t("Sends password reset links.") },
     { name: t("Cron secret"), ok: integrations.cron(), fix: t("Set CRON_SECRET to a long random value."), note: t("Protects the daily autopilot endpoint.") },
     {
       name: t("Encryption key"),

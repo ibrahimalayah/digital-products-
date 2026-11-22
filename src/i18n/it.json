@@ -721,6 +721,6 @@
   "Could not send the link. Try again in a minute.": "Impossibile inviare il link. Riprova tra un minuto.",
   "Pick a password you do not use anywhere else.": "Scegli una password che non usi da nessun'altra parte.",
   "Email sending": "Invio email",
-  "Set RESEND_API_KEY or BREVO_API_KEY (both have free plans) and EMAIL_FROM.": "Imposta RESEND_API_KEY o BREVO_API_KEY (entrambi hanno un piano gratuito) ed EMAIL_FROM.",
-  "Sends password reset links.": "Invia i link per reimpostare la password."
+  "Sends password reset links.": "Invia i link per reimpostare la password.",
+  "Set SMTP_USER and SMTP_PASS (a Gmail address and its app password), or RESEND_API_KEY, or BREVO_API_KEY with EMAIL_FROM.": "Imposta SMTP_USER e SMTP_PASS (un indirizzo Gmail e la sua password per le app), oppure RESEND_API_KEY, oppure BREVO_API_KEY con EMAIL_FROM."
 }

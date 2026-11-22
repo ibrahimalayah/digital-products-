@@ -1,18 +1,29 @@
-// Sends the site's own emails (password reset links). Works with Resend or
-// Brevo, both of which have a free plan; set one key and EMAIL_FROM.
+// Sends the site's own emails (password reset links). Three ways, chosen by
+// which settings exist:
+//  1. Resend (RESEND_API_KEY): needs a domain verified with Resend.
+//  2. SMTP (SMTP_USER + SMTP_PASS), Gmail by default: a Gmail address with an
+//     app password sends free without a domain (about 500 recipients a day),
+//     and mail comes from that address. Same settings as the Rekrutify project.
+//  3. Brevo (BREVO_API_KEY + EMAIL_FROM): a sender address verified with Brevo.
 import fs from "node:fs";
 import path from "node:path";
+import nodemailer, { type Transporter } from "nodemailer";
 
 export type Email = { to: string; subject: string; text: string; html: string };
 
-type Provider = "resend" | "brevo" | "outbox";
+type Provider = "resend" | "smtp" | "brevo" | "outbox";
+
+const smtpUser = () => process.env.SMTP_USER?.trim() || "";
+// Gmail shows app passwords in groups of four ("abcd efgh ijkl mnop").
+const smtpPass = () => (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
 // Browser tests collect mail in a file instead of sending it. Never on Vercel.
 const outboxFile = () => (process.env.EMAIL_OUTBOX_FILE && !process.env.VERCEL ? process.env.EMAIL_OUTBOX_FILE : null);
 
 export function emailProvider(): Provider | null {
   if (outboxFile()) return "outbox";
-  if (process.env.RESEND_API_KEY) return "resend";
+  if (process.env.RESEND_API_KEY?.trim()) return "resend";
+  if (smtpUser() && smtpPass()) return "smtp";
   // Brevo only sends from an address you have verified with them.
   if (process.env.BREVO_API_KEY && process.env.EMAIL_FROM) return "brevo";
   return null;
@@ -27,6 +38,30 @@ function sender() {
   return m ? { name: m[1].trim() || "Kitforge", email: m[2].trim() } : { name: "Kitforge", email: raw };
 }
 
+let transport: { key: string; transporter: Transporter } | null = null;
+
+function smtpTransport(): Transporter {
+  const host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT) || 465;
+  const key = [host, port, smtpUser(), smtpPass()].join(":");
+  if (transport?.key !== key) {
+    transport = {
+      key,
+      transporter: nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user: smtpUser(), pass: smtpPass() },
+        // A stuck mail server must not hang the request that triggered the email.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
+      }),
+    };
+  }
+  return transport.transporter;
+}
+
 export async function sendEmail(mail: Email): Promise<void> {
   const provider = emailProvider();
   if (!provider) throw new Error("No email service is configured.");
@@ -36,6 +71,18 @@ export async function sendEmail(mail: Email): Promise<void> {
     const file = outboxFile()!;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.appendFileSync(file, JSON.stringify(mail) + "\n");
+    return;
+  }
+
+  if (provider === "smtp") {
+    try {
+      // Gmail rewrites any other From address to the signed-in account, so send as that account.
+      await smtpTransport().sendMail({ from: { name: from.name, address: smtpUser() }, to: mail.to, subject: mail.subject, text: mail.text, html: mail.html });
+    } catch (err) {
+      const e = err as { code?: string; responseCode?: number };
+      const rejected = e.code === "EAUTH" || e.responseCode === 535;
+      throw new Error(rejected ? "SMTP sign-in rejected (check SMTP_USER and SMTP_PASS)." : "SMTP error (" + (e.code ?? e.responseCode ?? "unknown") + ").");
+    }
     return;
   }
 
