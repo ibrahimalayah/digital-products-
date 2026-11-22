@@ -51,9 +51,9 @@ const KEYLESS_URL = "https://text.pollinations.ai/openai";
 export const keylessAllowed = () =>
   process.env.AI_KEYLESS !== "0" && process.env.NODE_ENV !== "test" && !process.env.ANTHROPIC_API_KEY && !process.env.AI_GATEWAY_API_KEY;
 
-/** Reads "wait 41 seconds" out of a free tier's rate-limit reply. */
+/** Reads "wait 41 seconds" or "Retry after 34s" out of a free tier's rate-limit reply. */
 export function waitSeconds(text: string): number | null {
-  const m = text.match(/wait (\d{1,3}) seconds?/i);
+  const m = text.match(/(?:wait|retry after)\s+(\d{1,3})\s*s/i);
   return m ? Number(m[1]) : null;
 }
 

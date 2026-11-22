@@ -2,7 +2,7 @@ import { generateText, Output, type LanguageModel } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { AppError } from "./errors";
-import type { BudgetPlan, ProductOutline, ProductSection, VideoScript } from "./types";
+import type { Block, BudgetPlan, ProductOutline, ProductSection, VideoScript } from "./types";
 import * as fixture from "./ai-fixture";
 import { chainProviders, completeJson } from "./ai-chain";
 
@@ -110,15 +110,32 @@ const outlineSchema = z.object({
 
 // Models often leave out fields that do not apply to a block type, so the
 // unused ones are optional here and filled in after parsing.
+// Smaller models also invent block types now and then, so the type is read as
+// text and mapped onto a known one afterwards.
+const BLOCK_TYPES = ["paragraph", "steps", "checklist", "tip", "stuck", "template", "fill"] as const;
 const blockSchema = z.object({
-  type: z.enum(["paragraph", "steps", "checklist", "tip", "stuck", "template", "fill"]),
+  type: z.string(),
   title: z.string().nullish(),
   text: z.string().nullish(),
   items: z.array(z.string()).nullish(),
 });
 const sectionSchema = z.object({
-  pages: z.array(z.object({ heading: z.string(), goal: z.string(), blocks: z.array(blockSchema) })),
+  pages: z.array(z.object({ heading: z.string(), goal: z.string().nullish(), blocks: z.array(blockSchema) })),
 });
+
+/** Maps whatever a model called a block onto one of the types the PDF can draw. */
+export function blockType(type: string, hasItems: boolean): Block["type"] {
+  const t = type.trim().toLowerCase();
+  const known = BLOCK_TYPES.find((k) => k === t);
+  if (known) return known;
+  if (/check|tick/.test(t)) return "checklist";
+  if (/step|number|action/.test(t)) return "steps";
+  if (/fill|question|prompt|reflect|journal|worksheet/.test(t)) return "fill";
+  if (/template|script|letter|email|message/.test(t)) return "template";
+  if (/tip|note|hint/.test(t)) return "tip";
+  if (/stuck|trouble/.test(t)) return "stuck";
+  return hasItems ? "checklist" : "paragraph";
+}
 
 export type ProductBrief = {
   title: string;
@@ -160,7 +177,7 @@ export async function writeSection(p: ProductBrief, outline: ProductOutline, ind
       `${fence("all_sections", outline.sections.map((s, i) => `${i + 1}. ${s.title}`).join("\n"))}\n` +
       `${fence("this_section", `${target.title}: ${target.summary}`)}\n` +
       `${fence("pages_to_write", target.pageTitles.join("\n"))}\n\n` +
-      "Write one page per page title, in order. Each page has a heading, a one-sentence goal, and 4 to 6 blocks that together fill a printed page. Block types:\n" +
+      "Write one page per page title, in order. Each page has a heading, a one-sentence goal, and 4 to 6 blocks that together fill a printed page. Every block's `type` is exactly one of: paragraph, steps, checklist, template, fill, tip, stuck.\n" +
       "- paragraph: explanation in `text` (2 to 4 sentences)\n" +
       "- steps: numbered actions in `items`, with a `title`\n" +
       "- checklist: tick-box items in `items`, with a `title`\n" +
@@ -174,9 +191,9 @@ export async function writeSection(p: ProductBrief, outline: ProductOutline, ind
   // Fill in omitted fields and drop blocks that came back with nothing in them.
   const pages = out.pages.slice(0, 6).map((pg) => ({
     heading: pg.heading,
-    goal: pg.goal,
+    goal: pg.goal ?? "",
     blocks: pg.blocks
-      .map((b) => ({ type: b.type, title: b.title ?? "", text: b.text ?? "", items: b.items ?? [] }))
+      .map((b) => ({ type: blockType(b.type, Boolean(b.items?.length)), title: b.title ?? "", text: b.text ?? "", items: b.items ?? [] }))
       .filter((b) => b.text.trim() || b.items.length),
   }));
   return { title: target.title, summary: target.summary, pages };

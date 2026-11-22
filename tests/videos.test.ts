@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createProduct } from "@/server/products";
 import { createVideo, deleteVideo, getVideo, listVideos, updateVideo } from "@/server/videos";
-import { normaliseVideo, wordsFor } from "@/lib/ai";
+import { blockType, normaliseVideo, wordsFor } from "@/lib/ai";
 import { chainProviders, completeJson, waitSeconds } from "@/lib/ai-chain";
 import { envelope, mix, sceneAt, timeline } from "@/lib/video-render";
 import { getUsage } from "@/lib/usage";
@@ -97,6 +97,18 @@ describe("script clean-up", () => {
   });
 });
 
+describe("section clean-up", () => {
+  it("maps invented block types onto ones the PDF can draw", () => {
+    expect(blockType("Checklist", true)).toBe("checklist");
+    expect(blockType("numbered_steps", true)).toBe("steps");
+    expect(blockType("reflection questions", true)).toBe("fill");
+    expect(blockType("email template", false)).toBe("template");
+    expect(blockType("pro tip", false)).toBe("tip");
+    expect(blockType("list", true)).toBe("checklist");
+    expect(blockType("intro", false)).toBe("paragraph");
+  });
+});
+
 describe("video timing", () => {
   const scenes = [
     { caption: "One", narration: "one two three four five six seven eight" },
@@ -146,6 +158,7 @@ describe("keyless last resort", () => {
 
   it("reads the wait out of a rate-limit reply", () => {
     expect(waitSeconds("Free limit reached: 1 reply every 45 seconds per IP. Please wait 41 seconds or")).toBe(41);
+    expect(waitSeconds('{"error":{"message":"Free limit reached: 1 reply every 45 seconds per IP. Retry after 34s, or get"}}')).toBe(34);
     expect(waitSeconds("nope")).toBeNull();
   });
 
