@@ -144,6 +144,25 @@ describe("video timing", () => {
   });
 });
 
+describe("Hugging Face provider", () => {
+  it("joins the chain when a token is set and calls the router with it", async () => {
+    vi.stubEnv("HF_TOKEN", "hf_test");
+    const hf = chainProviders().find((p) => p.name === "huggingface")!;
+    expect(hf).toMatchObject({ baseUrl: "https://router.huggingface.co/v1", model: "openai/gpt-oss-120b:fastest" });
+    let seen = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        seen = `${url} ${new Headers(init?.headers).get("authorization")}`;
+        return Response.json({ choices: [{ finish_reason: "stop", message: { content: '{"ok":true}' } }] });
+      }),
+    );
+    const out = await completeJson(z.object({ ok: z.boolean() }), "s", "p", 100, [hf]);
+    expect(out).toMatchObject({ ok: true, provider: "huggingface" });
+    expect(seen).toBe("https://router.huggingface.co/v1/chat/completions Bearer hf_test");
+  });
+});
+
 describe("keyless last resort", () => {
   const schema = z.object({ ok: z.boolean() });
 

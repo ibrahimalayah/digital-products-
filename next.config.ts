@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   serverExternalPackages: ["@electric-sql/pglite", "@react-pdf/renderer", "pg"],
   poweredByHeader: false,
+  // The Arabic PDF font is read from disk at run time, so it has to be shipped with the PDF route.
+  outputFileTracingIncludes: {
+    "/api/cron/selftest": ["./node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-*-normal.woff"],
+    "/api/products/[id]/pdf": ["./node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-*-normal.woff"],
+  },
   turbopack: {
     rules: {
       "*.css": { loaders: ["@tailwindcss/turbopack"], as: "*.css" },

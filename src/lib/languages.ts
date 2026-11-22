@@ -1,5 +1,5 @@
 // Languages the agents can write in, with the fixed labels the PDF prints.
-// All of these use the Latin alphabet, which the PDF's built-in fonts cover.
+// Arabic is written right to left: the PDF mirrors its layout and uses an Arabic font.
 
 export const LANGUAGES = [
   { id: "en", name: "English" },
@@ -12,11 +12,14 @@ export const LANGUAGES = [
   { id: "sv", name: "Swedish" },
   { id: "da", name: "Danish" },
   { id: "no", name: "Norwegian" },
+  { id: "ar", name: "Arabic" },
 ] as const;
 
 export type LanguageId = (typeof LANGUAGES)[number]["id"];
 export const LANGUAGE_IDS = LANGUAGES.map((l) => l.id) as [LanguageId, ...LanguageId[]];
 export const isLanguage = (v: unknown): v is LanguageId => LANGUAGES.some((l) => l.id === v);
+/** True for languages written right to left. */
+export const isRtl = (id: string) => id === "ar";
 export const languageName = (id: string) => LANGUAGES.find((l) => l.id === id)?.name ?? "English";
 
 export type Labels = {
@@ -231,6 +234,25 @@ const LABELS: Record<LanguageId, Labels> = {
     net: "Klipp langs de hele linjene, brett langs de stiplede, og lim flikene.",
     draw: "Følg trinn 1, 2 og 3, og tegn så din egen på prikkene.",
     color: "Fargelegg akkurat som du vil.",
+  },
+  ar: {
+    welcome: "مرحبًا",
+    startHere: "ابدأ من هنا",
+    howToUse: "طريقة الاستخدام",
+    contents: "المحتويات",
+    inside: "ماذا يوجد في الداخل",
+    extras: "إضافات",
+    goal: "الهدف",
+    tip: "نصيحة",
+    stuck: "إذا واجهتك صعوبة",
+    day: "اليوم",
+    of: "من",
+    rights: "جميع الحقوق محفوظة. للاستخدام الشخصي فقط. يُمنع النسخ أو المشاركة أو إعادة البيع.",
+    maze: "ابحث عن الطريق من النقطة إلى النجمة.",
+    dots: "صِل النقاط بالترتيب ثم لوّن الرسمة.",
+    net: "قُصّ على الخطوط المتصلة، واطوِ على الخطوط المتقطعة، ثم ألصق الألسنة.",
+    draw: "اتبع الخطوات 1 و2 و3، ثم ارسم بنفسك على النقاط.",
+    color: "لوّنها كما تحب.",
   },
 };
 

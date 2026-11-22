@@ -6,7 +6,7 @@ import { z } from "zod";
 // Variable names match Rekrutify, so the same keys work in both projects.
 
 export type ChainProvider = {
-  name: "freellmapi" | "groq" | "google" | "openrouter" | "openai" | "keyless";
+  name: "freellmapi" | "groq" | "google" | "openrouter" | "huggingface" | "openai" | "keyless";
   baseUrl: string;
   key: string;
   model: string;
@@ -18,6 +18,9 @@ const FREE_TIERS = [
   { name: "groq", keys: ["GROQ_API_KEY"], modelVar: "GROQ_MODEL", baseUrl: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-20b" },
   { name: "google", keys: ["GEMINI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"], modelVar: "GEMINI_MODEL", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-3.5-flash-lite" },
   { name: "openrouter", keys: ["OPENROUTER_API_KEY"], modelVar: "OPENROUTER_MODEL", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/free" },
+  // Hugging Face Inference Providers: one token, many open models, routed to the fastest host.
+  // Needs a token with the "Make calls to Inference Providers" permission; free accounts must add credits.
+  { name: "huggingface", keys: ["HF_TOKEN", "HUGGINGFACE_API_KEY"], modelVar: "HF_MODEL", baseUrl: "https://router.huggingface.co/v1", model: "openai/gpt-oss-120b:fastest" },
 ] as const;
 
 /**

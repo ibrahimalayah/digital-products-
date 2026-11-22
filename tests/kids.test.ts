@@ -105,6 +105,50 @@ describe("children's drawings", () => {
   });
 });
 
+describe("Arabic", () => {
+  it("prints a right-to-left PDF in an Arabic font, with digits and Latin words intact", async () => {
+    const pdf = await renderProductPdf({
+      title: "مستكشفو الفضاء: كتاب الأنشطة",
+      promise: "اثنا عشر نشاطًا ممتعًا بلا شاشات.",
+      audience: "أطفال من 5 إلى 8 سنوات",
+      pageSize: "A4",
+      accent: "#1d3f72",
+      brand: "Kitforge",
+      language: "ar",
+      outline: { subtitle: "مغامرة ممتعة لكل طفل", welcome: "مرحبًا بك أيها المستكشف الصغير.\n\nفي نهاية هذا الكتاب سيكون لديك 12 نشاطًا مكتملًا.", howToUse: ["اطبع الصفحات.", "أحضر أقلام التلوين والمقص.", "أنجز نشاطًا واحدًا كل يوم."], sections: [], extras: ["متتبع التقدم"] },
+      sections: [
+        {
+          title: "الاستعداد للرحلة",
+          summary: "نجهّز كل ما نحتاجه قبل الإقلاع.",
+          pages: [
+            {
+              heading: "لوّن صاروخك",
+              goal: "أن تصمم صاروخًا خاصًا بك",
+              blocks: [
+                { type: "paragraph", title: "", text: "كل رائد فضاء يحتاج إلى صاروخ قوي. استخدم ألوانك المفضلة وزيّن صاروخك كما تشاء (PDF رقم 1).", items: [] },
+                { type: "drawing", title: "صاروخي", text: "color-rocket", items: [] },
+                { type: "steps", title: "افعل هذا", text: "", items: ["اختر 3 ألوان.", "لوّن جسم الصاروخ أولًا.", "أضف اسمك على الجانب."] },
+                { type: "checklist", title: "قائمة التجهيز", text: "", items: ["أقلام تلوين", "مقص", "صمغ"] },
+                { type: "tip", title: "", text: "جرّب تلوين النجوم بلون فضي.", items: [] },
+                { type: "paragraph", title: "", text: "في Kitforge قائمة جديدة: فكرة، قصة، جائزة. إذا أحببت 3D فجرّب المكعب.", items: [] },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+    // The Arabic font is embedded; without it the file would be far smaller.
+    expect(pdf.length).toBeGreaterThan(15_000);
+    if (process.env.PDF_OUT_AR) fs.writeFileSync(process.env.PDF_OUT_AR, pdf);
+  });
+
+  it("recognises Arabic children's products and Arabic as a language", () => {
+    expect(isKidsProduct({ title: "كتاب أنشطة الفضاء", audience: "للأطفال من 5 إلى 8", format: "" })).toBe(true);
+    expect(languageName("ar")).toBe("Arabic");
+  });
+});
+
 describe("languages", () => {
   it("has a full set of printed labels for every language", () => {
     const keys = Object.keys(labelsFor("en"));

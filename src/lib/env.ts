@@ -43,6 +43,7 @@ export const integrations = {
       process.env.GROQ_API_KEY ? "Groq" : "",
       process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Gemini" : "",
       process.env.OPENROUTER_API_KEY ? "OpenRouter" : "",
+      process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY ? "Hugging Face" : "",
       process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEYS ? "OpenAI" : "",
       process.env.AI_KEYLESS !== "0" ? "keyless free tier (slow)" : "",
     ].filter(Boolean);
@@ -50,7 +51,7 @@ export const integrations = {
     return chain.length ? `${chain.join(" → ")}, then ${last}` : last;
   },
   /** True when at least one free-tier or OpenAI key is set, so AI works without the gateway. */
-  aiChain: () => Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEYS || (process.env.FREELLMAPI_BASE_URL && process.env.FREELLMAPI_API_KEY)),
+  aiChain: () => Boolean(process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEYS || (process.env.FREELLMAPI_BASE_URL && process.env.FREELLMAPI_API_KEY)),
   cron: () => Boolean(process.env.CRON_SECRET),
   encryption: () => Boolean(process.env.ENCRYPTION_KEY),
 };

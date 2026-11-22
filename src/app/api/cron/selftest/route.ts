@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, dbReady, schema } from "@/db";
 import { safeEqual } from "@/lib/crypto";
 import { chainProviders, completeJson } from "@/lib/ai-chain";
+import { renderProductPdf } from "@/lib/pdf";
 
 export const maxDuration = 120;
 
@@ -24,6 +25,23 @@ export async function GET(req: Request) {
     report.database = { ok: true, videos: row.n, leads: leads.n, productsWithLanguage: lang.n };
   } catch (e) {
     report.database = { ok: false, error: (e as Error).message.slice(0, 120) };
+  }
+  // Arabic needs its font file on the server; this proves it shipped with the deployment.
+  try {
+    const pdf = await renderProductPdf({
+      title: "اختبار",
+      promise: "اختبار",
+      audience: "اختبار",
+      pageSize: "A4",
+      accent: "#1d3f72",
+      outline: null,
+      brand: "Kitforge",
+      language: "ar",
+      sections: [{ title: "قسم", summary: "ملخص", pages: [{ heading: "صفحة", goal: "", blocks: [{ type: "drawing", title: "متاهة", text: "maze", items: [] }] }] }],
+    });
+    report.arabicPdf = { ok: true, bytes: pdf.length };
+  } catch (e) {
+    report.arabicPdf = { ok: false, error: (e as Error).message.slice(0, 160) };
   }
   const providers = chainProviders();
   const started = Date.now();

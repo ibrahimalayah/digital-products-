@@ -531,5 +531,8 @@ export function makeDrawing(kind: DrawingKind, seed = ""): Drawing {
 
 /** True when a product is for children, in any of the supported languages. */
 export function isKidsProduct(p: { title: string; audience: string; format: string }): boolean {
-  return /\b(kids?|child(ren)?|toddlers?|preschool\w*|kindergar\w*|colou?ring|activity (book|pack|pages?)|ages? ?\d|niñ[oa]s?|enfants?|kinder|barn|børn|bambin[io]|crianças?|kinderen)\b/i.test(`${p.title} ${p.audience} ${p.format}`);
+  const text = `${p.title} ${p.audience} ${p.format}`;
+  // Arabic has no ASCII word boundaries, so it is matched on its own.
+  if (/أطفال|الأطفال|للأطفال|طفل|تلوين/.test(text)) return true;
+  return /\b(kids?|child(ren)?|toddlers?|preschool\w*|kindergar\w*|colou?ring|activity (book|pack|pages?)|ages? ?\d|niñ[oa]s?|enfants?|kinder|barn|børn|bambin[io]|crianças?|kinderen)\b/i.test(text);
 }

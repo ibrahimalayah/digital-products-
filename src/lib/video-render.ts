@@ -202,12 +202,16 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame, tl: Timeline,
   ctx.shadowBlur = 14;
   lines.forEach((line, li) => {
     const y = blockBottom - (lines.length - 1 - li) * lineH + (1 - enter) * 26;
-    let x = (W - ctx.measureText(line.join(" ")).width) / 2;
+    const lineW = ctx.measureText(line.join(" ")).width;
+    // Arabic and Hebrew read right to left, so their words are laid out from the right edge.
+    const rtl = /[\u0590-\u08FF]/.test(line.join(""));
+    let x = rtl ? (W + lineW) / 2 : (W - lineW) / 2;
     for (const w of line) {
       ctx.globalAlpha = enter * (n < shown ? 1 : 0.38);
       ctx.fillStyle = "#ffffff";
+      if (rtl) x -= ctx.measureText(w).width;
       ctx.fillText(w, x, y);
-      x += ctx.measureText(w + " ").width;
+      x += rtl ? -ctx.measureText(" ").width : ctx.measureText(w + " ").width;
       n++;
     }
   });

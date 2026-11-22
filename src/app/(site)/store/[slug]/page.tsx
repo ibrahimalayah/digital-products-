@@ -8,6 +8,8 @@ import { getUser } from "@/lib/session";
 import { ProductCover } from "@/components/product-cover";
 import { BuyButton } from "@/components/buy-button";
 import { LeadForm } from "@/components/lead-form";
+import { Drawing } from "@/components/drawing";
+import { isRtl } from "@/lib/languages";
 import { AButton } from "@/components/ui";
 import { money } from "@/lib/format";
 
@@ -36,13 +38,15 @@ export default async function ProductPage({ params }: Props) {
     owned = Boolean(o) || p.userId === user.id;
   }
   const pages = p.sections.filter(Boolean).reduce((n, s) => n + s.pages.length, 0);
+  const sample = p.sections.filter(Boolean)[0]?.pages[0];
+  const dir = isRtl(p.language) ? "rtl" : undefined;
 
   return (
     <div className="mx-auto grid max-w-6xl gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,380px)_1fr]">
       <div className="lg:sticky lg:top-24 lg:self-start">
         <ProductCover title={p.title} subtitle={p.outline?.subtitle || p.promise} accent={p.accent} />
       </div>
-      <div>
+      <div dir={dir}>
         <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">{p.format}</p>
         <h1 className="font-display text-5xl leading-none tracking-tight sm:text-6xl">{p.title}</h1>
         <p className="mt-5 text-xl leading-relaxed">{p.promise}</p>
@@ -72,6 +76,45 @@ export default async function ProductPage({ params }: Props) {
             <LeadForm productId={p.id} />
           </div>
         )}
+
+        {sample ? (
+          <section className="mt-12" aria-label="Free preview">
+            <h2 className="font-display text-3xl" dir="ltr">
+              Free preview
+            </h2>
+            <p className="mt-1 text-sm text-muted" dir="ltr">
+              The first page, exactly as it prints.
+            </p>
+            <div className="mt-5 rounded-2xl border border-line bg-surface p-6 sm:p-8">
+              <h3 className="font-display text-2xl">{sample.heading}</h3>
+              {sample.goal ? <p className="mt-1 text-sm text-muted">{sample.goal}</p> : null}
+              <div className="mt-4 space-y-4 text-sm leading-relaxed">
+                {sample.blocks.slice(0, 3).map((b, i) =>
+                  b.type === "drawing" ? (
+                    <Drawing key={i} kind={b.text} seed={b.title} className="w-full max-w-[280px] rounded-lg border border-line" />
+                  ) : (
+                    <div key={i}>
+                      {b.title ? <p className="font-semibold">{b.title}</p> : null}
+                      {b.text ? <p className="whitespace-pre-wrap">{b.text}</p> : null}
+                      {b.items.length ? (
+                        <ul className="mt-1 list-disc space-y-1 ps-5">
+                          {b.items.map((it, j) => (
+                            <li key={j}>{it}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ),
+                )}
+              </div>
+              {pages > 1 ? (
+                <p className="mt-5 border-t border-line pt-4 text-sm text-muted" dir="ltr">
+                  {pages - 1} more pages in the full PDF.
+                </p>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
         <h2 className="mt-12 font-display text-3xl">What&apos;s inside</h2>
         <ol className="mt-5 space-y-5">
